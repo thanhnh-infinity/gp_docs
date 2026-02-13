@@ -136,20 +136,22 @@ The Client Ontology is **not** a dead document — it is the **central knowledge
 ### Active consumers
 
 ```
-                        Client Ontology (RDF/OWL)
-                        imports GP Base Ontology
-                                  |
-                 +----------------+----------------+----------------+
-                 |                |                |                |
-          Operational       Symbolic           Neural          Backbone
-             Layer            Layer             Layer           Layer
-                 |                |                |                |
-        Pydantic Models     ASP Facts        LLM Context     All Reasoning
-        (data validation,   (Answer Set      (ai_context,      Steps
-         serialization,      Programming,     synonyms,
-         workflow use)        logic rules,     gp_semantic_link
-                              constraint       → field meaning,
-                              solving)         instructions)
+                              Client Ontology (RDF/OWL)
+                              imports GP Base Ontology
+                                        |
+          +----------------+------------+------------+----------------+
+          |                |            |            |                |
+    Operational       Symbolic      Neural      Knowledge       Backbone
+       Layer            Layer        Layer        Graph           Layer
+          |                |            |            |                |
+   Pydantic Models    ASP Facts    Neural       Logical          All Reasoning
+   (data validation,  (Answer Set  Context      Representation     Steps
+    serialization,     Programming, (ai_context, (RDF graph,
+    workflow use)       logic rules, synonyms,    SPARQL queries,
+                        constraint   gp_semantic  class hierarchy,
+                        solving)     _link        entity links)
+                                     → field
+                                     meaning)
 ```
 
 **A. Pydantic model generation (Operational Layer)**
@@ -163,15 +165,26 @@ The Client Ontology is **not** a dead document — it is the **central knowledge
 - An ASP solver can then reason over the facts — constraint checking, inference, rule evaluation
 - This is the **symbolic grounding** that makes reasoning deterministic where it needs to be
 
-**C. LLM reasoning enrichment (Neural Layer)**
-- `ai_context` (synonyms, instructions, examples) provides natural language context
-- `gp_semantic_link` tells the LLM what fields *mean*, not just what they're named
-- Class hierarchy from GP Base gives the LLM structured knowledge about data relationships
+**C. Neural reasoning enrichment (Neural Layer)**
+- `ai_context` (synonyms, instructions, examples) provides natural language context for any neural model
+- `gp_semantic_link` tells the neural model what fields *mean*, not just what they're named
+- Class hierarchy from GP Base gives the neural model structured knowledge about data relationships
 - This is the backbone for NL2SQL, semantic search, and data discovery
+- Any neural reasoning system (LLMs, embedding models, etc.) can consume this context
 
-**D. Full reasoning pipeline support (Backbone Layer)**
+**D. Logical representation as Knowledge Graph (Knowledge Graph Layer)**
+- The Client Ontology IS a knowledge graph — RDF triples form a directed labeled graph
+- Nodes: individuals (fields, datasets, entities, measures, metrics), classes, vocabulary items
+- Edges: object properties (`dataset_has_field`, `has_ai_context`, `gp_semantic_link` types, etc.)
+- Queryable via SPARQL: "Find all price fields across all datasets", "What joins connect store_sales to customer?"
+- Class hierarchy enables inference: if `gp_price_field` is a subclass of `gp_field`, querying for all `gp_field` instances returns price fields too
+- The graph structure enables path-based reasoning: "How is customer related to store_sales?" → follow relationship edges
+- Serves as the formal, machine-readable representation of all client data semantics — not just documentation, but executable knowledge
+
+**E. Full reasoning pipeline support (Backbone Layer)**
 - The Client Ontology is the single source of truth for all reasoning steps
-- Hybrid reasoning: symbolic (ASP) grounds the LLM, LLM handles ambiguity
+- Hybrid reasoning: symbolic (ASP) grounds the neural model, neural handles ambiguity
+- The knowledge graph provides structure, the neural context provides meaning
 - Every reasoning step can query the ontology for field semantics, relationships, and context
 
 ### What each consumer uses
@@ -180,17 +193,19 @@ The Client Ontology is **not** a dead document — it is the **central knowledge
 |----------|-------------------------------|---------|
 | **Pydantic Generator** | Datasets, fields, data types, structure | Data validation and workflow integration |
 | **ASP Facts** | Individuals, class hierarchy, properties, relationships | Symbolic reasoning — logic rules, constraint checking, inference |
-| **LLM Reasoning** | `ai_context` (synonyms, instructions, examples), `gp_semantic_link`, class hierarchy | Understanding what fields *mean*, not just what they're named |
-| **Reasoning Engine** | All of the above combined | Hybrid reasoning — symbolic grounds the LLM, LLM handles ambiguity |
+| **Neural Reasoning** | `ai_context` (synonyms, instructions, examples), `gp_semantic_link`, class hierarchy | Understanding what fields *mean*, not just what they're named |
+| **Knowledge Graph** | Full RDF graph — individuals, classes, properties, triples | Logical representation — SPARQL queries, graph traversal, class inference |
+| **Reasoning Engine** | All of the above combined | Hybrid reasoning — symbolic grounds neural, knowledge graph provides structure |
 
 ### Why this works
 
-The ontology's three semantic layers map directly to consumer needs:
-- **`gp_semantic_link`** → ASP knows field types, LLM knows field meaning
-- **`gp_data_type`** → Pydantic gets correct Python types, ASP gets type constraints
-- **`ai_context`** → LLM gets synonyms/instructions for natural language understanding
+The ontology's semantic layers map directly to consumer needs:
+- **`gp_semantic_link`** → ASP knows field types, neural models know field meaning, knowledge graph has typed edges
+- **`gp_data_type`** → Pydantic gets correct Python types, ASP gets type constraints, knowledge graph has data type nodes
+- **`ai_context`** → Neural models get synonyms/instructions for natural language understanding
+- **RDF structure** → Knowledge graph enables SPARQL queries, path traversal, and class-hierarchy inference
 
-Without the Client Ontology, the LLM has no semantic grounding, the ASP solver has no facts, and the workflows have no typed models. It is the backbone.
+Without the Client Ontology, the neural model has no semantic grounding, the ASP solver has no facts, the knowledge graph doesn't exist, and the workflows have no typed models. It is the backbone.
 
 ### Impact: RESOLVED — the architecture already addresses this
 
@@ -288,7 +303,7 @@ If a client's customer data lives in both Salesforce and Snowflake, the reasonin
                         HIGH
                          |
           Gap 1          |          Gap 3
-     (YAML authoring)   |    (downstream consumption)
+     (YAML authoring)    |    (downstream consumption)
      Blocks adoption     |    RESOLVED
                          |
   ADOPTION BLOCKER ------+------ VALUE DELIVERED
@@ -306,7 +321,7 @@ If a client's customer data lives in both Salesforce and Snowflake, the reasonin
 
 ### Revised recommended sequence
 
-Since Gap 3 is resolved (the reasoning engine already consumes the ontology via Pydantic, ASP, LLM, and the full reasoning pipeline), the priority shifts:
+Since Gap 3 is resolved (the reasoning engine already consumes the ontology via Pydantic, ASP, Neural Context, Knowledge Graph, and the full reasoning pipeline), the priority shifts:
 
 1. **Gap 1 first (YAML authoring)** — This is now the single biggest blocker. The value pipeline works end-to-end, but getting data INTO the pipeline is too manual. Schema auto-discovery would cut 80% of the effort.
 
@@ -324,11 +339,11 @@ Client Schema ---(manual, Gap 1)---> OSI YAML ---(parser)---> Mapper ---> RDF Ge
                                                                          Client Ontology
                                                                          imports GP Base
                                                                                 |
-                                 +----------------------------------------------+
-                                 |                  |                  |                  |
-                          Pydantic Models      ASP Facts         LLM Context       All Reasoning
-                          (workflows)          (symbolic          (neural             (hybrid
-                                                reasoning)         reasoning)          reasoning)
+                          +-----------------------------------------------------+------
+                          |              |              |              |              |
+                   Pydantic Models  ASP Facts    Neural Context  Knowledge Graph  All Reasoning
+                   (workflows)     (symbolic     (neural         (logical          (hybrid
+                                    reasoning)    reasoning)      representation)   reasoning)
 ```
 
-The **middle** (Parser -> Mapper -> RDF) is solid. The **output** (consumption) is solid — four active consumers. The **input** (YAML authoring) is the bottleneck. Gap 1 is the priority.
+The **middle** (Parser -> Mapper -> RDF) is solid. The **output** (consumption) is solid — five active consumers. The **input** (YAML authoring) is the bottleneck. Gap 1 is the priority.
