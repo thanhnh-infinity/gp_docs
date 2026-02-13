@@ -1,0 +1,385 @@
+ First question: Do we have anything already built (dev/test) that resembles demand forecasting / ordering?
+
+ I think we are discussing the demand forecasting for methodology term (explicit ML/DL Demand Forecasting ) and product (workflow). 
+
+First of all for the methodology Demand Forecasting, if we are understanding Demand Forecasting model as a term of classical ML/DL when we have historical data for all products with a lot of features variable as time, event, etc. Building the ML or DL model to predict or forecast demand for the input product at the moment. So my answer is NO, we don't have that in our GP AI Platform. Building that one is not hard but we need a large data of historical data to generate a good and accuracy model to answer the forecast question.
+
+Second of all for the workflow that might have Demand Forecasting inside, please bear with me if I am wrong, you are looking the solution to make a decision that this item need to push to sell, that item shouldn't promote to sell or something like that. If so, my answer is that We don't have explicit workflow to make it as main goal or primary responsibiltiy but we have some workflows and I think the Forecasting is a part of it even thought it is not the important thing inside. We called it Recommendation or Suggestion. I think that is much better if you want to try to run these workflow, review the output and let us know that the output is close to the thing you are thinking or not. Hera are 2 workflow I think they are quite close from my understanding. But again, bear with me if I am wrong. 
+
+Whitespace Identification Analysis 
+Market Sizing Landscape Workflow
+Market Right To Win Workflow
+
+
+class PricingScenarioSimulatorQuestionAnswerInput(BaseModel):
+    question: str = Field(
+          description="The user's EXACT question. Do NOT rephrase, summarize, or modify. Pass verbatim."
+    )
+
+
+
+Which scenario generates the highest total profit?
+
+Is there a scenario that isn't considered here but could be better overall for both sides? If so, how does it look like?
+
+
+Hello and good morning Miro, 
+
+I just want to share a bit my thinking in my head : If I understand correctly, all things call AI Agent today including DeepAgent or CrewAI or OpenAI SDK or Google ADK, they are the Tool-Call orchestration to orchestrate the "real agent" -- means LLM model to do some tasks and find better way to combine the result --- on the the hand, every published agents just LLM-API-wrapper. They are really good but I don't see any advantage or superior here in this architecture in level of scientific or innovation. In addition, they are designed framework for general problem and challenge.
+
+I know that might be too soon to say anything but I have developed Q&A Framework Agent with the same ideas to use real smart agents ( including LLM + GP RE symbolic AI + Ontology-Driven), With that I think we have potential to make our Q&A Framework Agent to be very intelligent or superior to serve our GP business models, clients --- mean for specific specific domains for client. All decision and answer must be traced to enable RL to make the answer better over-time. So I think 4 things I think that make us differeniate and superior:
+- Muti-agent architecture to handle a problem
+- Ontology-Driven to understand BOTH question + Client's Data + Workflow Output including filtering and reasoning inference
+- In Multi-agent, not LLM, but also many exclusive GP neural-symbolic AI agents can be used as well to solve the problem
+- Each decision MUST be traced and use to RL framework to provide better answer next time.
+
+
+=====
+
+
+1) Hybrid “Fast Path Router” (LLM only when needed) ✅ best overall
+
+Idea
+
+Add a deterministic/ML router that decides:
+	•	easy / obvious → no LLM (or 1 small LLM call only)
+	•	medium → batch planner call (your existing batch)
+	•	hard/ambiguous → full multi-step LLM (current behavior)
+
+What becomes deterministic
+
+Level 1 (section selection) + Level 2 (field selection) can often be done with:
+	•	sparse lexical retrieval (BM25) + ontology metadata
+	•	embeddings retrieval (fast vector search)
+	•	simple heuristics
+
+Then only call LLM if:
+	•	top scores are low-confidence
+	•	sections are close/competitive
+	•	question requires computation/aggregation logic
+
+Why accuracy stays close to Gemini
+
+Because for most queries, the correct answer is mostly a retrieval problem:
+	•	pick the right partitions
+	•	pick obvious columns
+	•	record_plan often can be rule-based
+
+The LLM is mainly helping with ambiguity, not with straightforward mapping.
+
+Latency win
+
+Typical: 2–10× faster
+LLM calls drop from 2–N to often 0 or 1.
+
+
+2) Replace Level-1 ID selection with Retrieval (BM25 + embeddings) ✅ big latency savings
+
+Right now Level-1 calls LLM over a compact ontology JSON. That’s expensive.
+
+Alternative
+
+Build a local “search index” over:
+	•	sid
+	•	title
+	•	nlp_methodology_description
+	•	metadata keys + short descriptions
+
+Then do:
+
+Candidate sections = top_k lexical + top_k embedding, union + rerank.
+
+Confidence gating:
+	•	if top section score ≥ threshold and margin > delta → accept deterministic selection
+	•	else call LLM only for final arbitration (single call)
+
+Accuracy impact
+
+Very small if you tune thresholds conservatively.
+
+Latency win
+
+Often eliminates 1 full LLM call.
+
+
+3) Replace Level-2 field selection with deterministic scoring ✅ huge win (this is your biggest latency sink)
+
+Field selection is the most frequent per-section work. Even in batch mode, it’s heavy.
+
+Deterministic field selector approach
+
+For each candidate section:
+
+Score each header using:
+	•	question → tokens
+	•	header name similarity (exact/partial match, synonyms)
+	•	ontology.metadata[field] description similarity
+	•	optional embedding similarity
+
+Return minimal set:
+	•	required fields for intent
+	•	plus join keys / id columns
+
+This works extremely well if you:
+	•	maintain a curated synonym list (“revenue” ~ “sales”, “margin%” ~ “gross_margin_pct”)
+	•	normalize tokens and do fuzzy match
+
+Accuracy impact
+
+Close to LLM for 80–90% of cases.
+For the remaining 10–20%, you fall back to LLM.
+
+Latency win
+
+This is where you can cut end-to-end latency dramatically.
+
+4) RecordPlan can be rule-based for most intents (LLM only for filter values) ✅
+
+Your record plan selection is good, but can be mostly inferred:
+
+Deterministic rules
+	•	if question asks “top / highest / lowest / best / worst” → top_k
+	•	if question asks “how many / total / avg / sum / distribution” → aggregate (if enabled)
+	•	if question asks “show me / list / which items” → filter or top_k depending on presence of constraints
+	•	if row_count <= 50 or summarize_* → all
+
+The hard part
+
+Choosing filter values correctly (you already handle valid_values).
+
+So:
+	•	plan mode can be deterministic
+	•	LLM only used to infer filter value when question says “in California” and the valid_value is “CA” etc.
+
+Accuracy impact
+
+Very close, because your allowed ops/fields already constrain output.
+
+
+5) Fine-tuned small model / distillation (best accuracy/latency trade when done right)
+
+If you want accuracy very close to Gemini 3 Flash with much lower latency, the most robust long-term move is:
+
+Distill your planner
+
+Log (question + ontology_compact + allowed_fields + section_ontology) → planner outputs
+
+Train a small model (or even a classifier + tagger):
+	•	section multi-label classifier
+	•	field multi-label classifier per section
+	•	record_plan classifier
+
+This becomes:
+	•	extremely fast
+	•	highly stable
+	•	no JSON “almost valid” failures
+
+
+
+FYI: In the Q&A Framework, the first agent—the Semantic Query Planner—becomes significantly faster and more robust when driven by ontology-based, deterministic search.
+
+I am currently developing a DeterministicOntologyDrivenPlanner that performs the same role using a different methodology. Instead of relying on LLM-based semantic reasoning, it executes local, ontology-driven search to identify the required partitions, fields, rows, aggregations, filters, groupings, and rule-based logic needed to answer a query.
+
+Today, the LLMOntologyDrivenAgent serves as the default planner and continues to work effectively. However, introducing additional planners is intentional: the long-term goal is to fully replace the LLM-based planner with an in-house symbolic GP agent, which is inherently faster, fully deterministic, and significantly more controllable when designed correctly.
+
+As a result, the Q&A system is now multi-agent, with each planner itself potentially composed of sub-agents. Designing the orchestration that allows these agents to collaborate efficiently is a key and interesting part of the architecture.
+
+
+
+ Can you update the code in question_answering_fr ? Second thing, I have update something in workflw_artifact.py to enable the ontology for Pricing Intelligence Workflow.
+
+  Help me to open that as new Q&A tool. I think mostly worlking on new @tool for question_answering_tools.py, register new PricingCompetitiveIntelligenceQAPipeline in qa_pipelines.py -- starting
+  with the semantic_query_planner_config similar with PricingScenarioSimulatorQAPipeline ,
+
+
+  
+
+   Okay, please scan the folder question_answering_fr folder. We need to improve a bit for the case RecordPlan when mode="all"
+
+  At the moment, as you can see we can have mode="all" for RecordPlan by 2 ways
+  1. We assign the partition as important_partitions
+  2. The Semantic or Determinisic Query Planner detect the RecordPlan with mode="all"
+
+  The same situation for that is that the max_rows for mode="all" is 200. As the guardrail we set-up to protect and limit the token run-out.
+
+  But for the pricing workflow, with the question:
+
+  Which market has the highest and lowest rebate % ?
+
+  it SHOULD look up the whole data set in price_recommendations to answer that. At the moment, with current status, we have 200 only for mode=all.
+
+  What approach is the best now you can think to deal with that ?
+
+  Remember I don't want to change the current behavior for the another workflows. We should make it particular for the workflow like configuration. But it is my idea.
+
+  Thinking and give me idea if you have better one
+────────────────────────────────────────────────────
+
+
+can you calculate scenario 2 and 3 financial impact as a percentage of the entire portfolio for an apple to apple comparison to scenario 1 and 4 ?
+
+
+ZeusTool.competitive_pricing_intelligence_rheem_workflow.value: [
+            "improve",
+            "think",
+            "design",
+            "optimize",
+            "build",
+            "generate",
+            "why",
+            "analysis",
+            "analyze",
+            "trade-off",
+            "tradeoff",
+            "calculate",
+            "compute",
+            "compare",
+            "create",
+            "insightful",
+            "pattern",
+            "maximize",
+            "minimize",
+            "estimate",
+            "predict",
+            "forecast",
+        ],
+    }
+
+
+
+I think "context graph" can be interpreted by different terminologies : business process, plan or workflow. Because Context Graph is the graph involves interconnected representation of data, decisions, and relationships to provide FULL human-like context. Do we think that is very similar with the GP Workflow ? 
+
+I think "Context Graph" is a business/ marketing term. In academic, I think it is State Transitions for Domain Representation. Image that in our workflow, when an atomic action occurs, it will change the context that we are discovering. If we back to how the workflow structure is , that is DAG and it represents exactly how business process has been encoded and expected to follow. That is a kind of context graph. I don't say Context Graph is Workflow but our Workflow is a instance of Context Graph when our Workflow represents the Contextualization, Domain Real-time representation. 
+
+==
+
+
+One more thought — given the level of technology and research innovation we’re developing (and I genuinely believe we are pushing the state of the art in this space), it would be a missed opportunity if we didn’t publish some of this work in scientific venues.
+
+
+
+
+⸻
+
+Demand Forecasting Workflow – Implementation Plan
+
+We want to implement a Demand Forecasting Workflow for the Business team to demo. The implementation will be structured in three phases.
+
+⸻
+
+PHASE 1 – Classical ML Approach
+
+Step 1: Model Development (Baseline – Classical ML)
+	•	Follow the SAP reference implementation:
+https://github.com/SAP-samples/sap-rpt-1-oss
+	•	Reproduce and adapt the SAP ML pipeline using our T4-trained dataset.
+	•	In addition to SAP OSS, you may evaluate other classical ML models (e.g., XGBoost, Random Forest, LightGBM, etc.) where appropriate.
+	•	Perform cross-validation across all candidate models.
+	•	Evaluate performance using appropriate forecasting metrics (e.g., MAE, RMSE, MAPE, SMAPE, etc.).
+→ Please select the evaluation metrics and confirm with me before finalizing.
+
+Deliverable:
+A comparison report showing cross-validation results across all ML models, including SAP OSS, and a clear selection of the best-performing model.
+
+⸻
+
+Step 2: Model Deployment
+	•	Deploy the selected best ML model to:
+	•	GCP Model Garden / Vertex AI
+	•	Expose the model via an API endpoint.
+	•	Ensure the endpoint follows the same deployment pattern as our existing classical models.
+
+Deliverable:
+A production-ready API endpoint for the ML demand forecasting model.
+
+⸻
+
+Step 3: Demo Workflow (ML Only)
+	•	Build a simple Demand Forecasting Workflow using the Growth Protocol AI SDK.
+	•	The workflow should:
+	•	Accept structured inputs (e.g., SKU, date range, features).
+	•	Invoke the deployed ML model API.
+	•	Return forecasting outputs.
+
+Implementation requirements:
+	•	One atomic action only.
+	•	Publish the workflow to Zeus UI for demo purposes.
+
+Deliverable:
+A working ML-based Demand Forecasting demo workflow in Zeus UI.
+
+⸻
+
+PHASE 2 – Deep Learning Approach
+
+Step 1: DL Model Development
+	•	Rebuild the demand forecasting pipeline using Deep Learning methods instead of classical ML.
+	•	You are free to select appropriate DL architectures (e.g., LSTM, Temporal Fusion Transformer, N-BEATS, etc.).
+	•	Please:
+	•	Explain model selection rationale.
+	•	Justify why each architecture is suitable for our demand forecasting problem.
+	•	Perform cross-validation across all DL models.
+	•	Select the best DL model based on agreed evaluation metrics.
+
+Deliverable:
+A comparison report of DL models with clear justification and final model selection.
+
+⸻
+
+Step 2: DL Model Deployment
+	•	Deploy the selected DL model to:
+	•	GCP Model Garden / Vertex AI
+	•	Expose via API.
+
+At this point we should have:
+	•	One best Classical ML model
+	•	One best Deep Learning model
+Both deployed and production-ready.
+
+⸻
+
+Step 3: Dual-Model Workflow
+	•	Upgrade the Demand Forecasting Workflow to:
+	•	Call both ML and DL APIs
+	•	Display both forecasting results side-by-side
+	•	Enable comparison within the same workflow execution.
+
+Deliverable:
+An upgraded workflow capable of comparing ML vs DL forecasting outputs.
+
+⸻
+
+PHASE 3 – Advanced Research & Innovation
+	•	Review state-of-the-art demand forecasting architectures.
+	•	Identify opportunities to:
+	•	Improve real-time adaptability
+	•	Incorporate non-traditional signals (e.g., live external data)
+	•	Improve robustness under distribution shift
+	•	Propose an advanced architecture for next iteration.
+
+We will review relevant academic and industry research before finalizing this phase.
+
+⸻
+
+
+
+Hi [Name],
+
+Thank you for sharing this. I completely understand that from a business and client perspective, the current Bayer FE presentation may follow a different logic in terms of usability, storytelling, and intuitiveness. I agree that the content and graph presentation are visually intuitive and likely resonate well with client expectations and workflows.
+
+I’d also like to share a few thoughts from the technical and reasoning architecture perspective, with the goal of strengthening the platform further and ensuring alignment between the frontend and our underlying reasoning principles:
+	1.	Workflow interpretability and interaction with the Reasoning Engine
+From a technical standpoint, I find the workflow content on the Bayer FE harder to interpret compared to the Dev App. I fully understand that I may not be the primary target user, but one key capability that seems missing is the ability to directly interact with the workflow data through our Reasoning Engine (e.g., chat or query interface). This interaction layer is important because it allows users to explore, validate, and reason over the workflow outputs, rather than only passively viewing them. Enabling this would significantly improve transparency and usability.
+	2.	Ontology representation and semantic structure
+I reviewed the Ontology tab, and it appears to correctly use the ontology data produced by Marcello and Loc for the Consumer Health domain. The underlying ontology itself is accurate and well-constructed. However, the current representation does not fully reflect the core semantic principles of an ontology.
+Ontologies fundamentally express hierarchical structure (class inheritance, abstraction, specialization, etc.) and semantic relationships through properties. Representing this as a flattened graph without clearly conveying class hierarchy and semantic structure makes it harder to understand the conceptual model. Additionally, properties — which are essential to defining semantic meaning — are not clearly represented in the current visualization.
+	3.	Need for a proper Knowledge Graph representation of workflow outputs
+Ideally, the frontend should reflect the actual logical Knowledge Graph generated by the workflow and reasoning system. This graph represents the structured, semantically grounded relationships between entities, facts, and inferred conclusions. At the moment, this logical layer does not appear to be fully represented in the FE, which limits both interpretability and traceability of reasoning results.
+	4.	Edge labeling as a core semantic requirement
+One important principle in both Ontology and Knowledge Graph representation is that all edges must be explicitly labeled. Edge labels define the semantic relationship between nodes, and without them, the graph loses its formal meaning. This is a non-negotiable requirement from a reasoning and knowledge representation perspective, and adding explicit relationship labels would significantly improve correctness and clarity.
+
+⸻
+
+Overall, I think the FE is moving in a very good direction from a client usability perspective. My goal in sharing these points is simply to help ensure that the frontend representation remains aligned with the semantic and reasoning foundations of our platform. If we can bridge the client-friendly presentation with the underlying ontology and knowledge graph structure more faithfully, it will make the system both intuitive and scientifically sound.
+
+I’m happy to work together on this and support however needed.

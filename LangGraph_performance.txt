@@ -1,0 +1,146 @@
+ompetitive intelligence analysis for brand Clubman 
+
+competitive intelligence analysis for brand Clubman in Beauty
+
+
+competitive intelligence analysis for brand Clubman in Beauty in Amazon
+
+
+competitive intelligence analysis for brand vaseline 
+
+=====
+
+
+
+product inventory classification for brand Clubman
+    
+
+product inventory classification for brand vaseline
+
+
+=====
+
+product pricing analysis for brand Clubman
+
+product pricing analysis for brand vaseline
+
+product pricing analysis for brand Bengal
+
+product pricing analysis for brand Clorox
+
+=====
+
+=====
+
+demographic profiling for brand Clubman
+
+target audience analysis for brand vaseline
+
+=====
+
+Customer Review Analysis Clubman
+
+Customer Feedback Insights vaseline
+
+====
+
+Clubman unique claims and value propostions
+
+vaseline unique claims and value propostions
+
+
+===
+
+
+---- General Questions (won't fire our RAG)
+*****1. Which age group is the consumer of energy drinks ?
+ 
+---- Basic Query (use single tool)---
+1. What are impact scores for Brain Health ?
+2. Topic clustering for Gut Health now ?
+3. How people sentiment talking about Skin care?
+4. What are the biggest deals for quantum computing ?
+5. Give me the detail and explanation where the products of skin care are common ?
+6. What is the benefit of Brain Health ?
+
+ --- Advance Query - Request multiple tools/RAG ---
+ 1. What are the growth drivers behind oat milk? 
+ 2. whats the consumer interest in microbiome?
+ 3. What are the biggest companies, deals and investors on Quantum Computing ?
+ 4. Why the gym supplementation market decline ? 
+ 
+
+ -- Complecated business logic -- Agentic Workflow (when the output of some tools could be the input of one or multipel others tools)
+ 1. Give the the detail patents landscape analysis for Brain Health ?
+ 2. Mental health and sleep health patents landscape analysis
+ 3. Gut health benefit landscape analysis
+
+
+--- Ambiguous
+1. Can you summarize the latest clinical trials and scientific journals on the microbiome ?
+2. What are the latest clinical trials on the Gut Microbiome ? 
+3. What are the latest clinical trials for the gut microbiome in April 2025?
+4. Can you provide me new innovations on paper-based packing for beverage products in Scientific Journals ?
+5. Can you provide me new innovations on paper-based packing for beverage products ? 
+6. I am working wit McCall Farms and they asked me to come up with a list of Vegetable Dog Food toppers. Can you give me a list ?
+7. What are the latest clinical trials that have been completed on gut health?
+
+8. Which GLP-1 drug is the most popular?
+9. What negative symptoms do GLP-1 drugs have?
+10. Which GLP-1 drug do people say have the least amount of symptoms?
+
+
+====
+
+Pricing Analysis between Sensodyne and Colgate
+
+Pricing Analysis between Colgate and  Sensodyne
+
+Pricing Analysis between Sensodyne and Crest
+
+Pricing Analysis between Sensodyne and Aquafresh
+
+Pricing Analysis between Colgate and Crest
+
+Pricing Analysis between Crest and Colgate
+
+Pricing Analysis between Aquafresh and Crest
+
+Pricing Analysis between Crest and Aquafresh
+
+
+
+=====
+
+
+What are the latest clinical trials on the gut microbiome ? 
+
+What are the latest clinical trials for on the gut microbiome in April 2025 ?
+
+
+product insights for Sonoma Range
+
+====
+
+What are the applications of metagenomics for bioprospection published in scientific journals since January 2024? Can you list the most interesting applications, with potential industrial opportunities?
+
+What is the latest findings in the field of bioelectric currents in human skin?
+
+I support strategic foresight in a global beauty R&D function. We are tracking the early signals of neurocosmetics and psychodermatology -- particular the link between skincare and emotional wellbeing. Our objective is to identify recent scientific studies that explore this crossover and its potential relevance for new product innovation. ( Provide information very detail please)
+
+Can you summarize recent ( less than 5 years) scientific literature for me?
+
+=== 
+
+demo pricing workflow between Colgate and Crest in 2025
+demo pricing workflow between Sensodyne and Colgate in 2025
+demo patents workflow for brain health
+demo patents workflow for gut health
+demo benefit workflow for mental health
+demo benefit workflow for sleep health
+
+==== 
+
+whitespace identification analysis for brand Conagra on category Frozen Breakfast
+
+whitespace identification analysis for brand Conagra on category Frozen Meals

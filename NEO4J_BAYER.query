@@ -1,0 +1,10 @@
+
+
+1. Get_all
+
+MATCH p=()-[:SEMANTICA_REL]->() RETURN p LIMIT 10000;
+
+2. Get Nodes and Rel related directly to Nodes
+
+MATCH (n) WHERE toLower(n.label) = "women's health"
+MATCH p=(n)-[r:SEMANTICA_REL]-(m) RETURN p LIMIT 100000;

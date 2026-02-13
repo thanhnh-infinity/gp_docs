@@ -1,0 +1,245 @@
+DEMO Reasoning Engine
+
+======== Use Case 1 ======= Graph Coloring ==== 
+Using GP Reasoning Engine with Reasoning Engine Agent: np_hard_np_complete_problems/graph_coloring_all. There are five nodes labeled a through e. The edges are: a connects to b and c, b connects to c and d, c connects to e, and d connects to e. Use red, green, and blue as available colors.
+
+
+======== Use Case 2 ======= Nurse Scheduling Classical==== 
+Using GP Reasoning Engine with Reasoning Engine Agent: np_hard_np_complete_problems/nurse_scheduling_classic_nn. I need to schedule 3 nurses named n1, n2, and n3 over five days. The days are labeled 1 through 5. Each day has three shifts: morning, evening, and night.
+
+
+======== Use Case 3 ======= Nurse Scheduling Optimization === 
+Using GP Reasoning Engine with Reasoning Engine Agent: np_hard_np_complete_problems/nurse_scheduling_opt_minimize_nn. I need to schedule six nurses: n1 through n6. The planning horizon is five days, labeled 1 to 5. Each day includes three shifts: morning, evening, and night. Each nurse has a specific cost per shift as follows: n1 costs 1, n2 costs 2, n3 costs 3, n4 costs 1, n5 costs 2, and n6 costs 3.
+
+
+======= Use Case 4 ======= BlockWorld Planning ====
+Using GP Reasoning Engine with Reasoning Engine Agent: reasoning_tasks/planning_blocksworld_classical_nn_no_constant. We are planning in a blocks world with 5 steps maximum. There are five movable blocks: a, b, c, d, and e.  Time is represented from 0 to steps maximum. The initial configuration is as follows: Block a is on the table. Block b is on top of a. Block c is on top of b. Block d is on the table. Block e is on the table. Block c is clear. Block d is clear. Block e is clear. The goal configuration is: a is on b, b is on c, c is on d, d is on e, and e is on the table.
+
+
+christian.thompson@growthprotocol.ai
+
+bryan.katis@growthprotocol.ai
+
+
+
+curl -X POST https://dev-olympus.growthprotocol.ai/api/v1/get-chatter/v1-1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJraWQiOiJxNE1YX2RrVkRJWmFOWGV4azcyZ0tNSGRPVnVQT2ZpbU8wdnFSaHltWjNVIiwiYWxnIjoiUlMyNTYifQ.eyJ2ZXIiOjEsImp0aSI6IkFULkJWZldaQTRCWkppalI1ZUViZ1Z2ellhbFdORUFqYmFjX2dTYlZITUhBX0UiLCJpc3MiOiJodHRwczovL2xvZ2luLm53by5haS9vYXV0aDIvYXVzaDV2bmxiV0VNSHcwVEc1ZDYiLCJhdWQiOiJodHRwczovL253by5haS9kZWZhdWx0IiwiaWF0IjoxNzQ0Mzg0MzkyLCJleHAiOjE3NDQzODc5OTIsImNpZCI6IjBvYTV2b3BkaG1ocVh5VmRoNWQ3IiwidWlkIjoiMDB1bmZ6OWEwZlJRSWM0NTQ1ZDciLCJzY3AiOlsib3BlbmlkIiwicHJvZmlsZSIsIm9yZ2FuaXphdGlvbiIsImVtYWlsIl0sImF1dGhfdGltZSI6MTc0NDM4NDM5MCwic3ViIjoidGhhbmgubmd1eWVuQGdyb3d0aHByb3RvY29sLmFpIn0.lO9lhoqODsKfD9iOj1PYWjnZQR3oAllzhQ1nPqfl7MIo6AbIJK9XW5ql5fe3D-6jMR6-I6do0j26Tu3lzFByS1NgNvwJ6Hi39k5UILtBIKhaSTLiCPtD-oQfSwRFceTp1pVPPY9Ocvw3X2kbXMuVVmr4WE--SW2hk_SOJVsI1SVm0LE_OIVN-EK_aJQPteCWyks_IisHGcBOctIYuBWQDzuBcNsclEyBT_CyvAXzd-e-lxOa6N5iJnsi-pgzjzvsAvV6exVfiBtG14k2dqPAs4kVO2Qh6_DCMPmiTudv6vUarlu_xDWUWI_y7ZKong9YVDJzL3r3yvzuHE9eDT44bg" \
+  -d '{
+    "platform": "semantic_scholar",
+    "year": 2025,
+    "month": 6,
+    "date": 11,
+    "term": "neurocosmetics",
+    "window": 1096
+}'
+
+
+curl -X POST https://dev-olympus.nwo.ai/api/v1/get-chatter/v1-1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJraWQiOiJxNE1YX2RrVkRJWmFOWGV4azcyZ0tNSGRPVnVQT2ZpbU8wdnFSaHltWjNVIiwiYWxnIjoiUlMyNTYifQ.eyJ2ZXIiOjEsImp0aSI6IkFULkJWZldaQTRCWkppalI1ZUViZ1Z2ellhbFdORUFqYmFjX2dTYlZITUhBX0UiLCJpc3MiOiJodHRwczovL2xvZ2luLm53by5haS9vYXV0aDIvYXVzaDV2bmxiV0VNSHcwVEc1ZDYiLCJhdWQiOiJodHRwczovL253by5haS9kZWZhdWx0IiwiaWF0IjoxNzQ0Mzg0MzkyLCJleHAiOjE3NDQzODc5OTIsImNpZCI6IjBvYTV2b3BkaG1ocVh5VmRoNWQ3IiwidWlkIjoiMDB1bmZ6OWEwZlJRSWM0NTQ1ZDciLCJzY3AiOlsib3BlbmlkIiwicHJvZmlsZSIsIm9yZ2FuaXphdGlvbiIsImVtYWlsIl0sImF1dGhfdGltZSI6MTc0NDM4NDM5MCwic3ViIjoidGhhbmgubmd1eWVuQGdyb3d0aHByb3RvY29sLmFpIn0.lO9lhoqODsKfD9iOj1PYWjnZQR3oAllzhQ1nPqfl7MIo6AbIJK9XW5ql5fe3D-6jMR6-I6do0j26Tu3lzFByS1NgNvwJ6Hi39k5UILtBIKhaSTLiCPtD-oQfSwRFceTp1pVPPY9Ocvw3X2kbXMuVVmr4WE--SW2hk_SOJVsI1SVm0LE_OIVN-EK_aJQPteCWyks_IisHGcBOctIYuBWQDzuBcNsclEyBT_CyvAXzd-e-lxOa6N5iJnsi-pgzjzvsAvV6exVfiBtG14k2dqPAs4kVO2Qh6_DCMPmiTudv6vUarlu_xDWUWI_y7ZKong9YVDJzL3r3yvzuHE9eDT44bg" \
+  -d '{
+    "platform": "clinical_trials",
+    "year": 2025,
+    "month": 6,
+    "date": 11,
+    "term": "inflammation control",
+    "window": 1096
+}'
+
+curl -X POST https://dev-olympus.nwo.ai/api/v1/get-chatter/v1-1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJraWQiOiJxNE1YX2RrVkRJWmFOWGV4azcyZ0tNSGRPVnVQT2ZpbU8wdnFSaHltWjNVIiwiYWxnIjoiUlMyNTYifQ.eyJ2ZXIiOjEsImp0aSI6IkFULkJWZldaQTRCWkppalI1ZUViZ1Z2ellhbFdORUFqYmFjX2dTYlZITUhBX0UiLCJpc3MiOiJodHRwczovL2xvZ2luLm53by5haS9vYXV0aDIvYXVzaDV2bmxiV0VNSHcwVEc1ZDYiLCJhdWQiOiJodHRwczovL253by5haS9kZWZhdWx0IiwiaWF0IjoxNzQ0Mzg0MzkyLCJleHAiOjE3NDQzODc5OTIsImNpZCI6IjBvYTV2b3BkaG1ocVh5VmRoNWQ3IiwidWlkIjoiMDB1bmZ6OWEwZlJRSWM0NTQ1ZDciLCJzY3AiOlsib3BlbmlkIiwicHJvZmlsZSIsIm9yZ2FuaXphdGlvbiIsImVtYWlsIl0sImF1dGhfdGltZSI6MTc0NDM4NDM5MCwic3ViIjoidGhhbmgubmd1eWVuQGdyb3d0aHByb3RvY29sLmFpIn0.lO9lhoqODsKfD9iOj1PYWjnZQR3oAllzhQ1nPqfl7MIo6AbIJK9XW5ql5fe3D-6jMR6-I6do0j26Tu3lzFByS1NgNvwJ6Hi39k5UILtBIKhaSTLiCPtD-oQfSwRFceTp1pVPPY9Ocvw3X2kbXMuVVmr4WE--SW2hk_SOJVsI1SVm0LE_OIVN-EK_aJQPteCWyks_IisHGcBOctIYuBWQDzuBcNsclEyBT_CyvAXzd-e-lxOa6N5iJnsi-pgzjzvsAvV6exVfiBtG14k2dqPAs4kVO2Qh6_DCMPmiTudv6vUarlu_xDWUWI_y7ZKong9YVDJzL3r3yvzuHE9eDT44bg" \
+  -d '{
+    "platform": "clinical_trials",
+    "year": 2025,
+    "month": 6,
+    "date": 11,
+    "term": "inflammation control",
+    "window": 1096,
+    "size" : 5000
+}'
+
+
+
+curl -X GET "https://dev-olympus.nwo.ai/api/v1/query-terms/inflammation%20control/doc_count?export_format=json&sources=clinical_trials" \
+  -H "Authorization: Bearer <token>"
+
+
+curl -X GET "https://dev-olympus.nwo.ai/api/v1/query-terms/inflammation%20control/doc_count?export_format=json&sources=clinical_trials&start_date=2024-05-26&end_date=2025-05-26" \
+-H "Authorization: Bearer eyJraWQiOiJxNE1YX2RrVkRJWmFOWGV4azcyZ0tNSGRPVnVQT2ZpbU8wdnFSaHltWjNVIiwiYWxnIjoiUlMyNTYifQ.eyJ2ZXIiOjEsImp0aSI6IkFULkJWZldaQTRCWkppalI1ZUViZ1Z2ellhbFdORUFqYmFjX2dTYlZITUhBX0UiLCJpc3MiOiJodHRwczovL2xvZ2luLm53by5haS9vYXV0aDIvYXVzaDV2bmxiV0VNSHcwVEc1ZDYiLCJhdWQiOiJodHRwczovL253by5haS9kZWZhdWx0IiwiaWF0IjoxNzQ0Mzg0MzkyLCJleHAiOjE3NDQzODc5OTIsImNpZCI6IjBvYTV2b3BkaG1ocVh5VmRoNWQ3IiwidWlkIjoiMDB1bmZ6OWEwZlJRSWM0NTQ1ZDciLCJzY3AiOlsib3BlbmlkIiwicHJvZmlsZSIsIm9yZ2FuaXphdGlvbiIsImVtYWlsIl0sImF1dGhfdGltZSI6MTc0NDM4NDM5MCwic3ViIjoidGhhbmgubmd1eWVuQGdyb3d0aHByb3RvY29sLmFpIn0.lO9lhoqODsKfD9iOj1PYWjnZQR3oAllzhQ1nPqfl7MIo6AbIJK9XW5ql5fe3D-6jMR6-I6do0j26Tu3lzFByS1NgNvwJ6Hi39k5UILtBIKhaSTLiCPtD-oQfSwRFceTp1pVPPY9Ocvw3X2kbXMuVVmr4WE--SW2hk_SOJVsI1SVm0LE_OIVN-EK_aJQPteCWyks_IisHGcBOctIYuBWQDzuBcNsclEyBT_CyvAXzd-e-lxOa6N5iJnsi-pgzjzvsAvV6exVfiBtG14k2dqPAs4kVO2Qh6_DCMPmiTudv6vUarlu_xDWUWI_y7ZKong9YVDJzL3r3yvzuHE9eDT44bg"
+
+
+curl -X GET "https://dev-olympus.nwo.ai/api/v1/query-terms/inflammation%20control/doc_count?export_format=json&sources=clinical_trials&start_date=2024-05-26&end_date=2025-05-26&interval=year" \
+-H "Authorization: Bearer eyJraWQiOiJxNE1YX2RrVkRJWmFOWGV4azcyZ0tNSGRPVnVQT2ZpbU8wdnFSaHltWjNVIiwiYWxnIjoiUlMyNTYifQ.eyJ2ZXIiOjEsImp0aSI6IkFULkJWZldaQTRCWkppalI1ZUViZ1Z2ellhbFdORUFqYmFjX2dTYlZITUhBX0UiLCJpc3MiOiJodHRwczovL2xvZ2luLm53by5haS9vYXV0aDIvYXVzaDV2bmxiV0VNSHcwVEc1ZDYiLCJhdWQiOiJodHRwczovL253by5haS9kZWZhdWx0IiwiaWF0IjoxNzQ0Mzg0MzkyLCJleHAiOjE3NDQzODc5OTIsImNpZCI6IjBvYTV2b3BkaG1ocVh5VmRoNWQ3IiwidWlkIjoiMDB1bmZ6OWEwZlJRSWM0NTQ1ZDciLCJzY3AiOlsib3BlbmlkIiwicHJvZmlsZSIsIm9yZ2FuaXphdGlvbiIsImVtYWlsIl0sImF1dGhfdGltZSI6MTc0NDM4NDM5MCwic3ViIjoidGhhbmgubmd1eWVuQGdyb3d0aHByb3RvY29sLmFpIn0.lO9lhoqODsKfD9iOj1PYWjnZQR3oAllzhQ1nPqfl7MIo6AbIJK9XW5ql5fe3D-6jMR6-I6do0j26Tu3lzFByS1NgNvwJ6Hi39k5UILtBIKhaSTLiCPtD-oQfSwRFceTp1pVPPY9Ocvw3X2kbXMuVVmr4WE--SW2hk_SOJVsI1SVm0LE_OIVN-EK_aJQPteCWyks_IisHGcBOctIYuBWQDzuBcNsclEyBT_CyvAXzd-e-lxOa6N5iJnsi-pgzjzvsAvV6exVfiBtG14k2dqPAs4kVO2Qh6_DCMPmiTudv6vUarlu_xDWUWI_y7ZKong9YVDJzL3r3yvzuHE9eDT44bg"
+
+
+curl -X POST https://dev-olympus.nwo.ai/api/v1/get-chatter/v1-1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJraWQiOiJxNE1YX2RrVkRJWmFOWGV4azcyZ0tNSGRPVnVQT2ZpbU8wdnFSaHltWjNVIiwiYWxnIjoiUlMyNTYifQ.eyJ2ZXIiOjEsImp0aSI6IkFULkJWZldaQTRCWkppalI1ZUViZ1Z2ellhbFdORUFqYmFjX2dTYlZITUhBX0UiLCJpc3MiOiJodHRwczovL2xvZ2luLm53by5haS9vYXV0aDIvYXVzaDV2bmxiV0VNSHcwVEc1ZDYiLCJhdWQiOiJodHRwczovL253by5haS9kZWZhdWx0IiwiaWF0IjoxNzQ0Mzg0MzkyLCJleHAiOjE3NDQzODc5OTIsImNpZCI6IjBvYTV2b3BkaG1ocVh5VmRoNWQ3IiwidWlkIjoiMDB1bmZ6OWEwZlJRSWM0NTQ1ZDciLCJzY3AiOlsib3BlbmlkIiwicHJvZmlsZSIsIm9yZ2FuaXphdGlvbiIsImVtYWlsIl0sImF1dGhfdGltZSI6MTc0NDM4NDM5MCwic3ViIjoidGhhbmgubmd1eWVuQGdyb3d0aHByb3RvY29sLmFpIn0.lO9lhoqODsKfD9iOj1PYWjnZQR3oAllzhQ1nPqfl7MIo6AbIJK9XW5ql5fe3D-6jMR6-I6do0j26Tu3lzFByS1NgNvwJ6Hi39k5UILtBIKhaSTLiCPtD-oQfSwRFceTp1pVPPY9Ocvw3X2kbXMuVVmr4WE--SW2hk_SOJVsI1SVm0LE_OIVN-EK_aJQPteCWyks_IisHGcBOctIYuBWQDzuBcNsclEyBT_CyvAXzd-e-lxOa6N5iJnsi-pgzjzvsAvV6exVfiBtG14k2dqPAs4kVO2Qh6_DCMPmiTudv6vUarlu_xDWUWI_y7ZKong9YVDJzL3r3yvzuHE9eDT44bg" \
+  -d '{
+    "platform": "pubmed",
+    "year": 2025,
+    "month": 6,
+    "date": 11,
+    "term": "inflammation control",
+    "window": 1096
+}'
+
+
+curl -X GET "https://dev-olympus.nwo.ai/api/v1/query-terms/inflammation%20control/doc_count?export_format=json&sources=semantic_scholar&start_date=2022-06-17&end_date=2025-06-17" \
+-H "Authorization: Bearer eyJraWQiOiJxNE1YX2RrVkRJWmFOWGV4azcyZ0tNSGRPVnVQT2ZpbU8wdnFSaHltWjNVIiwiYWxnIjoiUlMyNTYifQ.eyJ2ZXIiOjEsImp0aSI6IkFULkJWZldaQTRCWkppalI1ZUViZ1Z2ellhbFdORUFqYmFjX2dTYlZITUhBX0UiLCJpc3MiOiJodHRwczovL2xvZ2luLm53by5haS9vYXV0aDIvYXVzaDV2bmxiV0VNSHcwVEc1ZDYiLCJhdWQiOiJodHRwczovL253by5haS9kZWZhdWx0IiwiaWF0IjoxNzQ0Mzg0MzkyLCJleHAiOjE3NDQzODc5OTIsImNpZCI6IjBvYTV2b3BkaG1ocVh5VmRoNWQ3IiwidWlkIjoiMDB1bmZ6OWEwZlJRSWM0NTQ1ZDciLCJzY3AiOlsib3BlbmlkIiwicHJvZmlsZSIsIm9yZ2FuaXphdGlvbiIsImVtYWlsIl0sImF1dGhfdGltZSI6MTc0NDM4NDM5MCwic3ViIjoidGhhbmgubmd1eWVuQGdyb3d0aHByb3RvY29sLmFpIn0.lO9lhoqODsKfD9iOj1PYWjnZQR3oAllzhQ1nPqfl7MIo6AbIJK9XW5ql5fe3D-6jMR6-I6do0j26Tu3lzFByS1NgNvwJ6Hi39k5UILtBIKhaSTLiCPtD-oQfSwRFceTp1pVPPY9Ocvw3X2kbXMuVVmr4WE--SW2hk_SOJVsI1SVm0LE_OIVN-EK_aJQPteCWyks_IisHGcBOctIYuBWQDzuBcNsclEyBT_CyvAXzd-e-lxOa6N5iJnsi-pgzjzvsAvV6exVfiBtG14k2dqPAs4kVO2Qh6_DCMPmiTudv6vUarlu_xDWUWI_y7ZKong9YVDJzL3r3yvzuHE9eDT44bg"
+
+
+
+ curl -X POST https://dev-olympus.nwo.ai/api/v1/get-chatter/v1-1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJraWQiOiJxNE1YX2RrVkRJWmFOWGV4azcyZ0tNSGRPVnVQT2ZpbU8wdnFSaHltWjNVIiwiYWxnIjoiUlMyNTYifQ.eyJ2ZXIiOjEsImp0aSI6IkFULkJWZldaQTRCWkppalI1ZUViZ1Z2ellhbFdORUFqYmFjX2dTYlZITUhBX0UiLCJpc3MiOiJodHRwczovL2xvZ2luLm53by5haS9vYXV0aDIvYXVzaDV2bmxiV0VNSHcwVEc1ZDYiLCJhdWQiOiJodHRwczovL253by5haS9kZWZhdWx0IiwiaWF0IjoxNzQ0Mzg0MzkyLCJleHAiOjE3NDQzODc5OTIsImNpZCI6IjBvYTV2b3BkaG1ocVh5VmRoNWQ3IiwidWlkIjoiMDB1bmZ6OWEwZlJRSWM0NTQ1ZDciLCJzY3AiOlsib3BlbmlkIiwicHJvZmlsZSIsIm9yZ2FuaXphdGlvbiIsImVtYWlsIl0sImF1dGhfdGltZSI6MTc0NDM4NDM5MCwic3ViIjoidGhhbmgubmd1eWVuQGdyb3d0aHByb3RvY29sLmFpIn0.lO9lhoqODsKfD9iOj1PYWjnZQR3oAllzhQ1nPqfl7MIo6AbIJK9XW5ql5fe3D-6jMR6-I6do0j26Tu3lzFByS1NgNvwJ6Hi39k5UILtBIKhaSTLiCPtD-oQfSwRFceTp1pVPPY9Ocvw3X2kbXMuVVmr4WE--SW2hk_SOJVsI1SVm0LE_OIVN-EK_aJQPteCWyks_IisHGcBOctIYuBWQDzuBcNsclEyBT_CyvAXzd-e-lxOa6N5iJnsi-pgzjzvsAvV6exVfiBtG14k2dqPAs4kVO2Qh6_DCMPmiTudv6vUarlu_xDWUWI_y7ZKong9YVDJzL3r3yvzuHE9eDT44bg" \
+  -d '{
+    "platform": "semantic_scholar",
+    "year": 2025,
+    "month": 6,
+    "date": 17,
+    "term": "inflammation control",
+    "window": 1096
+}'
+
+
+
+curl -X POST https://dev-olympus.growthprotocol.ai/api/v1/gp_dre/contextual_reasoning \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer eyJraWQiOiJxNE1YX2RrVkRJWmFOWGV4azcyZ0tNSGRPVnVQT2ZpbU8wdnFSaHltWjNVIiwiYWxnIjoiUlMyNTYifQ.eyJ2ZXIiOjEsImp0aSI6IkFULkJWZldaQTRCWkppalI1ZUViZ1Z2ellhbFdORUFqYmFjX2dTYlZITUhBX0UiLCJpc3MiOiJodHRwczovL2xvZ2luLm53by5haS9vYXV0aDIvYXVzaDV2bmxiV0VNSHcwVEc1ZDYiLCJhdWQiOiJodHRwczovL253by5haS9kZWZhdWx0IiwiaWF0IjoxNzQ0Mzg0MzkyLCJleHAiOjE3NDQzODc5OTIsImNpZCI6IjBvYTV2b3BkaG1ocVh5VmRoNWQ3IiwidWlkIjoiMDB1bmZ6OWEwZlJRSWM0NTQ1ZDciLCJzY3AiOlsib3BlbmlkIiwicHJvZmlsZSIsIm9yZ2FuaXphdGlvbiIsImVtYWlsIl0sImF1dGhfdGltZSI6MTc0NDM4NDM5MCwic3ViIjoidGhhbmgubmd1eWVuQGdyb3d0aHByb3RvY29sLmFpIn0.lO9lhoqODsKfD9iOj1PYWjnZQR3oAllzhQ1nPqfl7MIo6AbIJK9XW5ql5fe3D-6jMR6-I6do0j26Tu3lzFByS1NgNvwJ6Hi39k5UILtBIKhaSTLiCPtD-oQfSwRFceTp1pVPPY9Ocvw3X2kbXMuVVmr4WE--SW2hk_SOJVsI1SVm0LE_OIVN-EK_aJQPteCWyks_IisHGcBOctIYuBWQDzuBcNsclEyBT_CyvAXzd-e-lxOa6N5iJnsi-pgzjzvsAvV6exVfiBtG14k2dqPAs4kVO2Qh6_DCMPmiTudv6vUarlu_xDWUWI_y7ZKong9YVDJzL3r3yvzuHE9eDT44bg" \
+  -d '{
+    "use_cache": False,
+    "contextual_content": "There are five nodes labeled a through e. The edges are: a connects to b and c, b connects to c and d, c connects to e, and d connects to e. Use red, green, and blue as available colors.",
+    "agent_identifier": "np_hard_np_complete_problems/graph_coloring_all"
+  }'
+
+
+
+
+response_dict = await OlympusConnector().post(
+            url_extension=RE_END_POINT_OLYMPUS, payload=payload
+        )
+        result = ASPReasonerResponse(**response_dict)
+        logger.info(f"[GP-DRE] Success for {gp_dre_agent}")
+        return result
+
+
+
+"We are planning in a blocks world with 5 steps maximum. There are five movable blocks: a, b, c, d, and e. Time is represented from 0 to maximum steps. The initial configuration is as follows: Block a is on the table, Block b is on top of a, Block c is on top of b, Block d is on the table, Block e is on the table, Block c is clear, Block d is clear, Block e is clear. The goal configuration is: a is on b, b is on c, c is on d, d is on e, and e is on the table."
+
+
+
+
+======
+
+SKU
+   - Set of Reviews
+   - Extract key thems for 5 dimensions
+
+  SKU(111, "pricing" : [value of price, price fairness], ....)
+
+SKU
+   - Set of Reviews
+   - Extract key thems for 5 dimensions
+
+  SKU(111, "pricing" : [value of price, price fairness], ....)
+
+SKU
+   - Set of Reviews
+   - Extract key thems for 5 dimensions
+
+  SKU(111, "pricing" : [value of price, price fairness], ....)
+
+SKU
+   - Set of Reviews
+   - Extract key thems for 5 dimensions
+
+  SKU(111, "pricing" : [value of price, price fairness], ....)
+
+SKU
+   - Set of Reviews
+   - Extract key thems for 5 dimensions
+
+  SKU(111, "pricing" : [value of price, price fairness], ....)
+
+SKU
+   - Set of Reviews
+   - Extract key thems for 5 dimensions
+
+  SKU(111, "pricing" : [value of price, price fairness], ....)
+
+
+"pricing" : 
+    "value of price" : 100,
+    "price fairness" : 12,
+    ...
+    ... 
+    => vector of key themes of pricing
+
+==> avg pricing sentiment score: X,  
+
+
+
+"installation"
+     ....
+
+
+
+
+===> Idea after :
+   
+   - Super Sentiment socre = W_p*pricing + W_i*installation .... + 1.0*online_rating
+     => basedon > vector of key themes of each dimension and update the weighted for each dimension in Super Sentiment Score computation
+
+
+  SKU=12345, pricing_score=0.32, pricing_themes=128 , pricing_breakdonw_thems = {pricing_fariness: 60, too expesisve: 50, value of money : 18}
+
+  pricing_thems = Sum( all pricing breakdonw)
+
+  Extracts key themes RELATED to Price/Value:  key themes for Pricing/Value Dimenison ==> What driver the key themes. 
+
+  W_p = pricing_themes / (pricing_themes + installation_themes + .....) => n
+
+  W_online = 1 - ( w_p + w_i + ...)
+
+
+  10 reviews SKU=12345
+
+     - Sum(pricing_themes:10, installation_themes: 10,....) = 50
+     - w_p = w_i ... = 10/50 = 0.2 
+     - w_o = 0
+     - Super Sentiment Score = (W_p*pricing + W_i*installation .... )*0.4 + 0.6*online_rating
+
+
+use_for_anking_pricing = Abs(Detal super sentiment score = Rheem - AOSmith)  * pricing_themes 
+use_for_anking_installation = Abs(Detal super sentiment score = Rheem - AOSmith) * installation_themes 
+
+
+use_for_anking_pricing > use_for_anking_installation
+ 
+
+
+128 is the number of the key themes belong to Pricing mentioned in the set of Reviews of SKU=1235
+
+SKU=12345, pricing_score=0.32, pricing_themes=128 
+
+128 is the number of the key themes belong to Pricing mentioned in the set of Reviews of SKU=1235
+
+SKU=12345, pricing_score=0.32, pricing_themes=128 
+
+128 is the number of the key themes belong to Pricing mentioned in the set of Reviews of SKU=1235
+
+SKU=12345, pricing_score=0.32, pricing_themes=128 
+
+128 is the number of the key themes belong to Pricing mentioned in the set of Reviews of SKU=1235
+
+SKU=12345, pricing_score=0.32, pricing_themes=128 
+
+128 is the number of the key themes belong to Pricing mentioned in the set of Reviews of SKU=1235
+
+how W_p is calcualted here ????
+
+
+Clorox
