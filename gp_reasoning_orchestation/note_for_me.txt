@@ -1,0 +1,109 @@
+FYI: Just sharing with you here abut the current situation for Q&A , I will re-doc everything and create the official documentation for that and share with AI team --- we have a lot of fragmented docs/writing around ( also in DM between me and you (Bryan and Miro) -- need to collect all of them for the complete doc:
+
+Will make that and share with all AI team
+
+======
+
+FYI: In the Q&A Framework, the first agent—the Semantic Query Planner—becomes significantly faster and more robust when driven by ontology-based, deterministic search.
+
+I am currently developing a DeterministicOntologyDrivenPlanner that performs the same role using a different methodology. Instead of relying on LLM-based Ontology-Driven semantic reasoning, it executes local, ontology-driven search to identify the required partitions, fields, rows, aggregations, filters, groupings, and rule-based logic needed to answer a query.
+
+Today, the LLMOntologyDrivenAgent serves as the default planner and continues to work effectively. However, introducing additional planners is intentional: the long-term goal is to fully replace the LLMOntologyDrivenAgent planner with an in-house symbolic GP agent, which is inherently faster, fully deterministic, and significantly more controllable when designed correctly.
+
+As a result, the Q&A system is now multi-agent, with each planner itself potentially composed of sub-agents. Designing the orchestration that allows these agents to collaborate efficiently is a key and interesting part of the architecture.
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Q&A Framework V2                             │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌──────────────┐    ┌─────────────────────┐    ┌─────────────────┐ │
+│  │ RouterAgent  │───>│ SemanticQueryPlanner│───>│ StructuredData  │ │
+│  │ (Model Route)│    │ (Partition Select)  │    │ Retriever(Agent)│ │
+│  └──────────────┘    └─────────────────────┘    └────────┬────────┘ │
+│         │                                                │          │
+│         │            ┌─────────────────────┐             │          │
+│         └───────────>│ GroundedAnswerEngine│<────────────┘          │
+│                      │  (Final Answer)     │                        │
+│                      └─────────────────────┘                        │
+└─────────────────────────────────────────────────────────────────────┘
+
+  Question
+      |
+  ┌─────────────────────────────┐
+  │ 1. Semantic Query Planner   │  ← Ontology-Driven selects partitions, fields, record plan  
+  │    - Partition Selection    │.   with 2 sub-agents : LLMOntologyDrivenPlannerAgent and DeterministicOntologyDrivenPlanner
+  │    - Field Selection        │
+  │    - Record Plan (filter/agg)│
+  └─────────────────────────────┘
+      |
+  ┌─────────────────────────────┐
+  │ 2. Structured Data Retriever│  ← Symbolic execution (pandas)
+  │    - Filter/Top-K/Aggregate │
+  │    - No LLM involved        │
+  └─────────────────────────────┘
+      |
+  ┌─────────────────────────────┐
+  │ 3. Grounded Answer Engine   │  ← Generates answer from evidence
+  │    - Executive-level output │
+  └─────────────────────────────┘
+  
+
+===
+
+Just wanted to share a quick update: Spencer, Jake, and I are making good progress on the growth-protocol-ai-sdk initiative. The primary goal is to enable non-core engineering teams (especially FDEs even client like EY) to develop, scale, and deploy new client workflows independently, without requiring changes to the Core platform. The high-level idea is to cleanly separate Core Engines from workflow delivery, so workflows and Q&A experiences can evolve rapidly while the Core remains stable.
+
+1. Core Engines exported as an SDK
+
+We are packaging core capabilities as a reusable SDK, including:
+
+Workflow EngineStatic Ontology (initial)Selected some Reasoning  features
+
+In the next phase, this will expand to include the full Ontology Engine and Reasoning Engine
+
+2. Standardized workflow development model for FDEs
+
+When a new client workflow is needed, FDEs:
+Create a new repo using our workflow template:  https://github.com/growth-protocol-ai/workflow-templateImport the SDK:  import growth_protocol_ai_sdk.  Implement only what is specific to the client:New atomic actions (or reuse existing ones from the SDK)Define input/output of workflow inheritance from SDKWorkflow definition via YAML
+
+3. Workflow execution lifecycle
+Build workflows via YAML Use:WorkflowEngine.compile() to validate and assembleWorkflowEngine.execute() to run and generate structured outputs (workflow input and output schema defined by Core SDK)
+
+4. Decoupled output & experience layer. Workflow outputs can be:
+Rendered directly in Zeus UI, orSent to external systems for downstream handling
+
+Clients then interact with our Q&A Framework through:
+Zeus UI, orAny custom front-end integrated
+
+Workflows and the Q&A Framework are now being designed to be fully deployable and evolvable independently from Core. This significantly improves:
+
+Team velocityPlatform scalabilityClient delivery efficiencyCore system stability
+
+Overall, this is shaping up to be a strong foundation for clean separation between Core AI capabilities and client-facing workflow delivery. At the moment, we can run the independent workflow on Local,  Spencer is working to sync the input/output and also can provide that platform on our Dev. then Jake can create an enterprise workflow like Pricing Scenario Simulator for Rheem for POC.
+
+
+====
+
+he answer at the moment is : Yes, but there are some thoughts here:
+
+Workflow creation : Need human-in-the-loop -- FDE developer at the moment, but when it is able to reach to next phase -- We will able to generate the workflow structure --- (aka Business Process) completely automatically. At the step there are 2 sub-sequence steps here:The new workflow structure --- (aka Business Process) are DAG of available atomic actions from Action Domain --> Then no manual or human-in-the-loop to build the workflow --- It is complete automatic process. We just need some configuration to make it work but it is more like approval, verification instead of building or assembling.The new workflow structure --- (aka Business Process) are DAG that  contains  some business logic - that we don't have in our platform --- We need to build atomic actions for that. At that point, there are 2 sub-sequences steps here:Currently, engineer will do that by coding atomic action using SDK like Spencer shared with you today and register the workflow => Our situation now.But so far, we are able generate the atomic action completely automatically.Ontology understand the LogicWe are building the Agent to generate the code on-the-fly for the business logic given the Ontology-Driven and Understanding. Code could be in any language to handle the business logics.[12:40 PM]I hope that makes sense to you
+[12:42 PM]2. For the Client Data Ontology:
+
+Yes, it is very close with Client Data so we might need human-in-loop or Semi-automatic system for that
+
+So we are building a Tool such that
+
+Input:
+Client Data Structure / Real DataSetGP Knowledge Onotlogy
+
+Output:
+Client Ontology [12:43 PM]Client Ontology for phase 1 is yaml file as OSI standard https://opensemanticinterchange.org/ , but at the end, it is a "thing" with format matched with GP Ontology.
+
+====
+
+Yes, that is the thing we need to do next Christian. We need to sync between Talos and Automatic Workflow Generation.
+
+Talos with me is the Tool that users will use and very helpful for users when they are not sure how to deal with their data -- they might need to do some Data Exploration and Talos is good tool for that.
+
+After that, if users can reach to the good business process and they can say --> Generate the workflow for me --> and we will call the Automatic Workflow Generation module to handle that tash --> Generate the workflow and ALL  CODES need for Atomic Actions --> Registry new workflow and work in our system
+
+I will write more carefully document for that one and update with team.
