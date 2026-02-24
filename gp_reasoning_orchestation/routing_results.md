@@ -1,0 +1,160 @@
+# Smart Router Agent — Routing Results (98 Questions)
+
+## Competitive Pricing Intelligence
+`workflow_id=competitive_pricing_intelligence_rheem_workflow`
+
+| # | Question | Level | Task | Thinking | Conf | Model | Fallbacks |
+|--:|----------|-------|------|----------|-----:|-------|-----------|
+| 1 | is there anything advance insightful information I can get from above report to decide ... | L1_SIMPLE | analysis | low | 0.52 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 2 | Which market has the highest and lowest rebate % ? | L0_LOOKUP | retrieval | minimal | 0.79 | gemini-3-flash | claude-haiku-4-5 |
+| 3 | Which SKUs truly belong together across systems? | L0_LOOKUP | retrieval | minimal | 0.64 | gemini-3-flash | claude-haiku-4-5 |
+| 4 | Which channels are structurally margin-negative? | L1_SIMPLE | math | low | 0.72 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 5 | What does our actual price architecture look like across all channels? | L0_LOOKUP | retrieval | minimal | 0.53 | gemini-3-flash | claude-haiku-4-5 |
+| 6 | Which SKUs drive system-level margins? | L1_SIMPLE | retrieval | low | 0.72 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 7 | Where is cannibalization eating gross profit? | L0_LOOKUP | math | minimal | 0.77 | gemini-3-flash | claude-haiku-4-5 |
+| 8 | What's the true causal driver of low margin? Price? Channel? Warranty? | L2_ANALYTICAL | math | high | 0.83 | gemini-3-pro | claude-sonnet-4-6, gemini-3.1-pro |
+| 9 | What would have happened last quarter if we raised prices earlier? | L1_SIMPLE | retrieval | low | 0.71 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 10 | Which promotions had negative ROI? | L1_SIMPLE | math | low | 0.72 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 11 | Where are we margin-leaking? | L0_LOOKUP | math | minimal | 0.83 | gemini-3-flash | claude-haiku-4-5 |
+| 12 | What are the SKUs with the widest range in prices? | L0_LOOKUP | retrieval | minimal | 0.90 | gemini-3-flash | claude-haiku-4-5 |
+| 13 | what is the average elasticity of the market? | L1_SIMPLE | math | low | 0.90 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 14 | How could we improve the price recommendation engine? | L2_ANALYTICAL | creative | - | 0.85 | claude-sonnet-4-6 | gemini-3-pro, gemini-3.1-pro |
+
+---
+
+## Warranty Intelligence Rheem
+`workflow_id=warranty_intelligence_rheem_workflow`
+
+| # | Question | Level | Task | Thinking | Conf | Model | Fallbacks |
+|--:|----------|-------|------|----------|-----:|-------|-----------|
+| 1 | Is there anything insightful information warranty I can get from these report data in w... | L1_SIMPLE | analysis | low | 0.71 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 2 | Which things I should focus on to improve the user experience with Rheem products ? | L2_ANALYTICAL | creative | - | 0.59 | claude-sonnet-4-6 | gemini-3-pro, gemini-3.1-pro |
+| 3 | How many dollars in claims were submitted in the Great Lakes region for heat pumps in t... | L0_LOOKUP | retrieval | minimal | 0.53 | gemini-3-flash | claude-haiku-4-5 |
+| 4 | How much dollars in claims were submitted in the NY METRO region for heat pumps in FY2025... | L0_LOOKUP | retrieval | minimal | 0.59 | gemini-3-flash | claude-haiku-4-5 |
+| 5 | Which stores in NYC METRO region have the highest rate of claims submitted within 2025 ? | L0_LOOKUP | retrieval | minimal | 0.62 | gemini-3-flash | claude-haiku-4-5 |
+| 6 | Which stores in NYC METRO region have the highest rate of claims submitted within 2025 and 2024? | L0_LOOKUP | retrieval | minimal | 0.59 | gemini-3-flash | claude-haiku-4-5 |
+| 7 | What product families create the most warranty risk? | L2_ANALYTICAL | creative | - | 0.78 | claude-sonnet-4-6 | gemini-3-pro, gemini-3.1-pro |
+| 8 | Where are we inconsistent across Region vs Retail vs Distributor? | L1_SIMPLE | comparison | low | 0.68 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 9 | Which installers create systemic warranty liability? | L2_ANALYTICAL | creative | - | 0.68 | claude-sonnet-4-6 | gemini-3-pro, gemini-3.1-pro |
+| 10 | What are the top 5 latent drivers of warranty cost? | L0_LOOKUP | retrieval | minimal | 0.90 | gemini-3-flash | claude-haiku-4-5 |
+| 11 | Which new failure modes are not covered today? | L0_LOOKUP | retrieval | minimal | 0.85 | gemini-3-flash | claude-haiku-4-5 |
+| 12 | Where is the real root cause? Component? Assembly? Installer? | L2_ANALYTICAL | retrieval | high | 0.85 | gemini-3-pro | claude-sonnet-4-6, gemini-3.1-pro |
+| 13 | Which subsystems are causing cascading claims? | L1_SIMPLE | retrieval | low | 0.72 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 14 | What failure patterns are emerging pre-visibility? | L0_LOOKUP | analysis | minimal | 0.58 | gemini-3-flash | claude-haiku-4-5 |
+| 15 | Which stores will see a spike in the next 4 weeks? | L0_LOOKUP | retrieval | minimal | 0.76 | gemini-3-flash | claude-haiku-4-5 |
+| 16 | Which installers are trending toward problematic behavior? | L0_LOOKUP | retrieval | minimal | 0.85 | gemini-3-flash | claude-haiku-4-5 |
+| 17 | Which claims represent a new failure mode? | L0_LOOKUP | retrieval | minimal | 0.85 | gemini-3-flash | claude-haiku-4-5 |
+| 18 | Which part combinations predict early failure? | L1_SIMPLE | creative | - | 0.68 | claude-haiku-4-5 | gemini-3-flash, gemini-3-pro |
+| 19 | Which installers should NOT install specific SKUs? | L0_LOOKUP | retrieval | minimal | 0.85 | gemini-3-flash | claude-haiku-4-5 |
+| 20 | Which installers are driving warranty cost per region? | L2_ANALYTICAL | retrieval | high | 0.57 | gemini-3-pro | claude-sonnet-4-6, gemini-3.1-pro |
+| 21 | Which claims violate the contract? | L0_LOOKUP | retrieval | minimal | 0.85 | gemini-3-flash | claude-haiku-4-5 |
+| 22 | Which parts fail together and why? | L1_SIMPLE | retrieval | low | 0.72 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 23 | Which regions have structural early-failure risk? | L2_ANALYTICAL | retrieval | high | 0.65 | gemini-3-pro | claude-sonnet-4-6, gemini-3.1-pro |
+| 24 | Which product families are misclassified? | L0_LOOKUP | retrieval | minimal | 0.85 | gemini-3-flash | claude-haiku-4-5 |
+| 25 | If I raise price by 3%, what happens to warranty cost and channel conflict? | L2_ANALYTICAL | math | high | 0.51 | gemini-3-pro | claude-sonnet-4-6, gemini-3.1-pro |
+
+---
+
+## Pricing Simulator Intelligence
+`workflow_id=pricing_simulator_intelligence_workflow`
+
+| # | Question | Level | Task | Thinking | Conf | Model | Fallbacks |
+|--:|----------|-------|------|----------|-----:|-------|-----------|
+| 1 | Which is the most optimal pricing scenario for Rheem? | L0_LOOKUP | retrieval | minimal | 0.90 | gemini-3-flash | claude-haiku-4-5 |
+| 2 | Can you design a complete new pricing scenario for Rheem to maximize the profit ? | L3_COMPLEX | creative | - | 0.90 | claude-opus-4-6 | gemini-3.1-pro, claude-sonnet-4-6 |
+| 3 | Can you design a new pricing scenario for Rheem to maximize the market share ? | L3_COMPLEX | creative | - | 0.90 | claude-opus-4-6 | gemini-3.1-pro, claude-sonnet-4-6 |
+| 4 | What are the key assumptions you are making for this scenario? | L0_LOOKUP | analysis | minimal | 0.90 | gemini-3-flash | claude-haiku-4-5 |
+| 5 | What is the most optimal pricing scenario for Rheem ? Give me insightful information ab... | L0_LOOKUP | analysis | minimal | 0.90 | gemini-3-flash | claude-haiku-4-5 |
+| 6 | Give me top 10 records ranking by profit for Rheem for each Scenarios 2 ,3 and 4 | L1_SIMPLE | math | low | 0.90 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 7 | Provide the top 10 largest opportunities | L0_LOOKUP | retrieval | minimal | 0.90 | gemini-3-flash | claude-haiku-4-5 |
+| 8 | Where are the largest price differences? | L0_LOOKUP | retrieval | minimal | 0.85 | gemini-3-flash | claude-haiku-4-5 |
+| 9 | Where are the largest price differences between Home Depot and Lowe's? | L1_SIMPLE | comparison | low | 0.59 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 10 | On average, in which markets is Home Depot cheaper and where is it more expensive? | L0_LOOKUP | math | minimal | 0.51 | gemini-3-flash | claude-haiku-4-5 |
+| 11 | What are the patterns of opportunity for scenario 4? | L0_LOOKUP | analysis | minimal | 0.90 | gemini-3-flash | claude-haiku-4-5 |
+| 12 | Can you calculate scenario 2 & 3's financial impact as a percentage of the entire portf... | L2_ANALYTICAL | math | high | 0.85 | gemini-3-pro | claude-sonnet-4-6, gemini-3.1-pro |
+| 13 | What is the average elasticity by market? Please provide straight average and then weig... | L1_SIMPLE | math | low | 0.90 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 14 | Can you summarize scenario 4 by product segment? | L1_SIMPLE | analysis | low | 0.71 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 15 | what pricing actions would benefit Home Depot the most? | L0_LOOKUP | retrieval | minimal | 0.82 | gemini-3-flash | claude-haiku-4-5 |
+| 16 | Can you design another scenario which would optimize Home Depot's margin instead? | L3_COMPLEX | creative | - | 0.85 | claude-opus-4-6 | gemini-3.1-pro, claude-sonnet-4-6 |
+| 17 | For scenario 4, can you highlight the top products, groups of products, and markets dri... | L2_ANALYTICAL | math | high | 0.78 | gemini-3-pro | claude-sonnet-4-6, gemini-3.1-pro |
+| 18 | Which offers will THD/Lowes accept? | L0_LOOKUP | retrieval | minimal | 0.85 | gemini-3-flash | claude-haiku-4-5 |
+
+---
+
+## Deep Analytical (cross-workflow)
+`workflow_id=default`
+
+| # | Question | Level | Task | Thinking | Conf | Model | Fallbacks |
+|--:|----------|-------|------|----------|-----:|-------|-----------|
+| 1 | What is the best achievable profit if we cap share loss at 2%? | L2_ANALYTICAL | math | high | 0.62 | gemini-3-pro | claude-sonnet-4-6, gemini-3.1-pro |
+| 2 | Which price moves increase profit without hurting warranty or channel? | L1_SIMPLE | math | low | 0.60 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 3 | What is our profit frontier by product family? | L1_SIMPLE | math | low | 0.52 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 4 | What are the top objections likely to arise? | L0_LOOKUP | retrieval | minimal | 0.90 | gemini-3-flash | claude-haiku-4-5 |
+| 5 | What's the probability of deal success under different structures? | L0_LOOKUP | retrieval | minimal | 0.82 | gemini-3-flash | claude-haiku-4-5 |
+| 6 | Which SKUs have a rising warranty signal before it becomes visible? | L1_SIMPLE | retrieval | low | 0.71 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 7 | Which failure spikes are real vs noise? | L0_LOOKUP | comparison | minimal | 0.53 | gemini-3-flash | claude-haiku-4-5 |
+| 8 | Which anomalies require root-cause investigation? | L1_SIMPLE | retrieval | low | 0.72 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 9 | Where is the system drifting out of normal behavior? | L0_LOOKUP | retrieval | minimal | 0.82 | gemini-3-flash | claude-haiku-4-5 |
+| 10 | Why is the warranty cost 2x higher in THD vs Wholesale? | L2_ANALYTICAL | comparison | - | 0.78 | claude-sonnet-4-6 | gemini-3-pro, gemini-3.1-pro |
+| 11 | What channel factors explain regional differences? | L2_ANALYTICAL | retrieval | high | 0.79 | gemini-3-pro | claude-sonnet-4-6, gemini-3.1-pro |
+| 12 | Is this failure an installer error, a defective part, or misuse? | L0_LOOKUP | retrieval | minimal | 0.76 | gemini-3-flash | claude-haiku-4-5 |
+| 13 | Which failure modes are systemic vs localized? | L2_ANALYTICAL | comparison | - | 0.66 | claude-sonnet-4-6 | gemini-3-pro, gemini-3.1-pro |
+| 14 | How do we reduce warranty cost by 10-20% without degrading service levels? | L2_ANALYTICAL | math | high | 0.85 | gemini-3-pro | claude-sonnet-4-6, gemini-3.1-pro |
+| 15 | Which repairs should be preemptively approved? | L0_LOOKUP | retrieval | minimal | 0.85 | gemini-3-flash | claude-haiku-4-5 |
+| 16 | What is the cost-minimizing service policy for each region? | L1_SIMPLE | retrieval | low | 0.90 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 17 | What will warranty cost be next quarter by region? | L1_SIMPLE | retrieval | low | 0.54 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 18 | Which installers will cause budget overruns? | L1_SIMPLE | retrieval | low | 0.72 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 19 | Which new product launches create warranty risk? | L2_ANALYTICAL | creative | - | 0.75 | claude-sonnet-4-6 | gemini-3-pro, gemini-3.1-pro |
+| 20 | Where should we enforce more training? | L0_LOOKUP | retrieval | minimal | 0.85 | gemini-3-flash | claude-haiku-4-5 |
+
+---
+
+## Strategic / Growth (cross-workflow)
+`workflow_id=default`
+
+| # | Question | Level | Task | Thinking | Conf | Model | Fallbacks |
+|--:|----------|-------|------|----------|-----:|-------|-----------|
+| 1 | What if Menards undercuts us? | L2_ANALYTICAL | creative | - | 0.66 | claude-sonnet-4-6 | gemini-3-pro, gemini-3.1-pro |
+| 2 | If we raise the price by 2%, what is Menards likely to do? | L1_SIMPLE | math | low | 0.52 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 3 | What competitor will react first? | L2_ANALYTICAL | retrieval | high | 0.62 | gemini-3-pro | claude-sonnet-4-6, gemini-3.1-pro |
+| 4 | Where are competitors structurally unable to follow? | L2_ANALYTICAL | retrieval | high | 0.68 | gemini-3-pro | claude-sonnet-4-6, gemini-3.1-pro |
+| 5 | What counter-structure satisfies both margin & retailer targets? | L1_SIMPLE | math | low | 0.66 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 6 | Which promos are margin leaks? | L0_LOOKUP | math | minimal | 0.80 | gemini-3-flash | claude-haiku-4-5 |
+| 7 | Which promos risk channel conflict? | L2_ANALYTICAL | retrieval | high | 0.85 | gemini-3-pro | claude-sonnet-4-6, gemini-3.1-pro |
+| 8 | Where does promo misalignment cause retailer tension? | L2_ANALYTICAL | retrieval | high | 0.82 | gemini-3-pro | claude-sonnet-4-6, gemini-3.1-pro |
+| 9 | Are price drops attracting high-risk installers? | L1_SIMPLE | retrieval | low | 0.60 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 10 | What price actions reduce long-term service costs? | L1_SIMPLE | creative | - | 0.65 | claude-haiku-4-5 | gemini-3-flash, gemini-3-pro |
+| 11 | If we launch SKU X in region Y, what warranty cost will it create? | L2_ANALYTICAL | creative | - | 0.85 | claude-sonnet-4-6 | gemini-3-pro, gemini-3.1-pro |
+| 12 | Which design choices reduce long-term service cost? | L3_COMPLEX | creative | - | 0.65 | claude-opus-4-6 | gemini-3.1-pro, claude-sonnet-4-6 |
+| 13 | Which SKU/store combos have elevated warranty risk before any claim occurs? | L2_ANALYTICAL | retrieval | high | 0.80 | gemini-3-pro | claude-sonnet-4-6, gemini-3.1-pro |
+| 14 | Which promotions drive low-quality demand? | L1_SIMPLE | retrieval | low | 0.72 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 15 | Are returns early indicators of failures? | L1_SIMPLE | retrieval | low | 0.60 | gemini-3-flash | claude-haiku-4-5, gemini-3-pro |
+| 16 | Which returns predict 70%+ chance of warranty claim? | L2_ANALYTICAL | math | high | 0.52 | gemini-3-pro | claude-sonnet-4-6, gemini-3.1-pro |
+| 17 | Which SKUs have negative lifetime value even if initial margins look strong? | L2_ANALYTICAL | retrieval | high | 0.71 | gemini-3-pro | claude-sonnet-4-6, gemini-3.1-pro |
+| 18 | Where does discounting create long-term warranty liabilities? | L2_ANALYTICAL | creative | - | 0.60 | claude-sonnet-4-6 | gemini-3-pro, gemini-3.1-pro |
+| 19 | Which preventive actions reduce warranty by 20%? | L2_ANALYTICAL | creative | - | 0.85 | claude-sonnet-4-6 | gemini-3-pro, gemini-3.1-pro |
+| 20 | Which installer behaviors drive systemic failures? | L2_ANALYTICAL | retrieval | high | 0.85 | gemini-3-pro | claude-sonnet-4-6, gemini-3.1-pro |
+| 21 | Where is design change required? | L2_ANALYTICAL | creative | - | 0.85 | claude-sonnet-4-6 | gemini-3-pro, gemini-3.1-pro |
+
+---
+
+## Summary (98 questions total)
+
+### Level Distribution
+
+| Level | Count | % |
+|-------|------:|--:|
+| L0_LOOKUP | 36 | 36.7% |
+| L1_SIMPLE | 28 | 28.6% |
+| L2_ANALYTICAL | 30 | 30.6% |
+| L3_COMPLEX | 4 | 4.1% |
+
+### Model Distribution
+
+| Model | Count | % |
+|-------|------:|--:|
+| claude-haiku-4-5 | 2 | 2.0% |
+| claude-opus-4-6 | 4 | 4.1% |
+| claude-sonnet-4-6 | 12 | 12.2% |
+| gemini-3-flash | 62 | 63.3% |
+| gemini-3-pro | 18 | 18.4% |
