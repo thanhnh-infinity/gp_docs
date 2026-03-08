@@ -1,6 +1,10 @@
-# Smart Router Agent — All Possible Solutions (Level 1)
+# Smart Router Agent — Design Document
 
-## Current State
+> **Status:** Phase 1 COMPLETED (Approach A + F hybrid). See `README.md` for implementation details.
+> **Implementation:** `router_agent.py` — 5-level × 6-task-type deterministic routing, zero LLM calls.
+> **Test harness:** `check_router_agent.py` + `test_routing_agent.py` — 139 questions across 7 workflow groups.
+
+## Original State (Before Phase 1)
 
 ```
 Question → Keyword Match → Binary: yes/no reasoning → Pick 1 of 2 models
@@ -12,11 +16,25 @@ Question → Keyword Match → Binary: yes/no reasoning → Pick 1 of 2 models
 - No concept of reasoning **levels** — Claude Opus 4.6 is overkill for "compare X and Y"
 - No model **fitness** consideration — some questions suit Gemini better, others suit Claude better
 
-## Target State
+## Implemented State
 
 ```
-Question → Complexity Analysis → Reasoning Level (L0-L4) → Model Fitness Scoring → Best Model
+Question → Two-Stage Deterministic Router → Reasoning Level (L0-L4) × Task Type (6 types) → Best Model
+                                                                                             ↑
+                                          ASP context + modification patterns ──────► select_for_task()
+                                          (explicit PROGRAM_EXECUTION routing)        → SIG-PRE + Claude
 ```
+
+**What was delivered (Phase 1 + Phase 1.5 + Phase 1.6):**
+- 5-level reasoning classification (L0–L4) via regex + weighted scoring
+- 6 task types: RETRIEVAL, MATH, COMPARISON, ANALYSIS, CREATIVE, PROGRAM_EXECUTION
+- Two-stage pipeline: Stage 1 fast regex exit (<1ms) + Stage 2 multi-signal weighted scoring (<5ms)
+- `select_for_task()` for explicit task type routing (used by ASP pipeline for PROGRAM_EXECUTION)
+- `PROGRAM_EXECUTION_PATTERNS` — 7 regex patterns for ASP modification detection (exported, NOT in Stage 1/Stage 2)
+- Gemini thinking config (model-aware: thinkingLevel for 3.x, thinkingBudget for 2.5)
+- Authorized models validation + cross-provider fallback chain
+- External context enrichment: config-gated, two-layer detection (RouterDecision + domain patterns), parallel web search (Perplexity → Gemini), token-budgeted, domain search context per workflow
+- 139-question test harness across 7 workflow groups (including ASP reasoning + composition workflow)
 
 ---
 
@@ -36,7 +54,9 @@ Question → Complexity Analysis → Reasoning Level (L0-L4) → Model Fitness S
 
 ## Step 2: All Possible Approaches to Classify Complexity
 
-### Approach A — Enhanced Rule-Based (Multi-Signal Scoring)
+### Approach A — Enhanced Rule-Based (Multi-Signal Scoring) — IMPLEMENTED
+
+> **Status:** IMPLEMENTED in `_stage2_full_scoring()`. 9 signal groups with weighted scoring, length bonus, intent bonus, ambiguity bonus.
 
 **How:** Combine multiple deterministic signals into a weighted complexity score instead of just keyword matching.
 
@@ -188,30 +208,33 @@ Papers: **FrugalGPT** (2023), **AutoMix** (NeurIPS 2024) — demonstrated 50%+ c
 
 ---
 
-### Approach F — Hybrid Two-Stage Router
+### Approach F — Hybrid Two-Stage Router — IMPLEMENTED
+
+> **Status:** IMPLEMENTED as Stage 1 (`_stage1_fast_exit()`) + Stage 2 (`_stage2_full_scoring()`). Stage 2 uses weighted scoring (Approach A) instead of embeddings. ~60% of questions exit at Stage 1.
 
 **How:** Combine fast deterministic filter (Stage 1) with semantic classification (Stage 2).
 
 ```
-Stage 1 (< 2ms): Rule-based patterns
+Stage 1 (< 1ms): Rule-based patterns
   → Obviously simple (e.g., "list all...", "show me...", "top N...") → L0, use Flash
   → Obviously complex (e.g., "design...", "what if...", "optimize...") → L3+, use Opus
   → Ambiguous → Stage 2
 
-Stage 2 (5-15ms): Embedding similarity OR spaCy features
+Stage 2 (< 5ms): Multi-signal weighted scoring (Approach A)
+  → 9 signal groups + length/intent/ambiguity bonuses
   → Classify into L0-L4
-  → Select model
+  → Select model from (Level × TaskType) routing table
 ```
 
 | Pros | Cons |
 |------|------|
-| Fast for obvious cases (<2ms) | Two systems to maintain |
+| Fast for obvious cases (<1ms) | Two systems to maintain |
 | Accurate for ambiguous cases | More code complexity |
 | Best of both worlds | |
 | Minimizes overhead | |
 
 **Implementation complexity:** Medium (1 week)
-**Latency overhead:** 2ms (obvious) to 15ms (ambiguous)
+**Latency overhead:** <1ms (obvious) to <5ms (ambiguous)
 
 ---
 
@@ -219,58 +242,92 @@ Stage 2 (5-15ms): Embedding similarity OR spaCy features
 
 Beyond complexity, we need to consider **which model is best** for the specific task type:
 
-### Model Capability Matrix (Your Available Models)
+### Model Capability Matrix (Available Models)
 
-| Model | Speed | Reasoning | Math | Synthesis | Creative | Cost |
-|-------|-------|-----------|------|-----------|----------|------|
-| **Gemini 3.0 Flash** | ★★★★★ | ★★☆ | ★★★ | ★★☆ | ★★☆ | $ |
-| **Claude 4.5 Haiku** | ★★★★☆ | ★★★ | ★★★ | ★★★ | ★★☆ | $ |
-| **Claude 4.6 Sonnet** | ★★★☆☆ | ★★★★ | ★★★★ | ★★★★ | ★★★★ | $$ |
-| **Claude 4.5 Sonnet** | ★★★☆☆ | ★★★★ | ★★★★ | ★★★★ | ★★★☆ | $$ |
-| **Gemini 3.1 Pro** | ★★★☆☆ | ★★★★ | ★★★★★ | ★★★★ | ★★★ | $$ |
-| **Gemini 2.5 Pro** | ★★☆☆☆ | ★★★★ | ★★★★★ | ★★★★ | ★★★ | $$$ |
-| **Claude 4.6 Opus** | ★★☆☆☆ | ★★★★★ | ★★★★★ | ★★★★★ | ★★★★★ | $$$$ |
+| Model | Provider | Speed | Reasoning | Math | Synthesis | Creative | ASP/Symbolic | Cost |
+|-------|----------|-------|-----------|------|-----------|----------|-------------|------|
+| **Gemini 3.0 Flash** | Vertex AI | ★★★★★ | ★★☆ | ★★★ | ★★☆ | ★★☆ | — | $ |
+| **Claude 4.5 Haiku** | Vertex AI | ★★★★☆ | ★★★ | ★★★ | ★★★ | ★★☆ | — | $ |
+| **Claude 4.6 Sonnet** | Vertex AI | ★★★☆☆ | ★★★★ | ★★★★ | ★★★★ | ★★★★ | ★★★ | $$ |
+| **Claude 4.5 Sonnet** | Vertex AI | ★★★☆☆ | ★★★★ | ★★★★ | ★★★★ | ★★★☆ | ★★☆ | $$ |
+| **Gemini 3.1 Pro** | Vertex AI | ★★★☆☆ | ★★★★ | ★★★★★ | ★★★★ | ★★★ | — | $$ |
+| **Gemini 2.5 Pro** | Vertex AI | ★★☆☆☆ | ★★★★ | ★★★★★ | ★★★★ | ★★★ | — | $$$ |
+| **Claude 4.6 Opus** | Vertex AI | ★★☆☆☆ | ★★★★★ | ★★★★★ | ★★★★★ | ★★★★★ | ★★★★ | $$$$ |
+| **SIG-PRE 0.1** | GP (self-hosted) | ★★★★ | ★★★★★ | ★★★★★ | — | — | ★★★★★ | — |
 
-### Proposed Routing Table
+> **SIG-PRE 0.1** is the GP Contextual Reasoning Engine — a deterministic ASP/Clingo solver. It is not an LLM. It is the primary execution engine for `PROGRAM_EXECUTION` tasks, with Claude Opus 4.6 as the rule generation assistant and recovery fallback.
 
-| Level | RETRIEVAL | MATH | COMPARISON | ANALYSIS | CREATIVE |
-|-------|-----------|------|------------|----------|----------|
-| **L0** | Gemini 3.0 Flash | Gemini 3.0 Flash | Gemini 3.0 Flash | Gemini 3.0 Flash | Gemini 3.0 Flash |
-| **L1** | Gemini 3.0 Flash | Gemini 3.0 Flash | Gemini 3.0 Flash | Gemini 3.0 Flash | Claude 4.5 Haiku |
-| **L2** | Gemini 3.0 Pro | Gemini 3.0 Pro | Claude 4.6 Sonnet | Claude 4.6 Sonnet | Claude 4.6 Sonnet |
-| **L3** | Gemini 3.1 Pro | Gemini 3.1 Pro | Claude 4.6 Opus | Claude 4.6 Opus | Claude 4.6 Opus |
-| **L4** | Gemini 3.1 Pro | Gemini 3.1 Pro | Claude 4.6 Opus | Claude 4.6 Opus | Claude 4.6 Opus |
+### Implemented Routing Table (5 × 6)
 
-**Principle**: Gemini handles structured data tasks (retrieval, math, data analysis). Claude handles language-quality tasks (comparison, creative, strategic analysis). This means the router needs **two dimensions**: Reasoning Level + Task Type.
+| Level | RETRIEVAL | MATH | COMPARISON | ANALYSIS | CREATIVE | PROGRAM_EXECUTION |
+|-------|-----------|------|------------|----------|----------|-------------------|
+| **L0** | Gemini 3.0 Flash | Gemini 3.0 Flash | Gemini 3.0 Flash | Gemini 3.0 Flash | Gemini 3.0 Flash | SIG-PRE 0.1 (+ Opus) |
+| **L1** | Gemini 3.0 Flash | Gemini 3.0 Flash | Gemini 3.0 Flash | Gemini 3.0 Flash | Claude 4.5 Haiku | SIG-PRE 0.1 (+ Opus) |
+| **L2** | Gemini 3.0 Pro | Gemini 3.0 Pro | Claude 4.6 Sonnet | Claude 4.6 Sonnet | Claude 4.6 Sonnet | SIG-PRE 0.1 (+ Opus) |
+| **L3** | Gemini 3.1 Pro | Gemini 3.1 Pro | Claude 4.6 Opus | Claude 4.6 Opus | Claude 4.6 Opus | SIG-PRE 0.1 (+ Opus) |
+| **L4** | Gemini 3.1 Pro | Gemini 3.1 Pro | Claude 4.6 Opus | Claude 4.6 Opus | Claude 4.6 Opus | SIG-PRE 0.1 (+ Opus) |
+
+**Design principles:**
+- Gemini handles structured data tasks (retrieval, math, data analysis). Claude handles language-quality tasks (comparison, creative, strategic analysis). This means the router needs **two dimensions**: Reasoning Level + Task Type.
+- `PROGRAM_EXECUTION` always routes to SIG-PRE 0.1 (deterministic ASP solver) with Claude Opus 4.6 as assistant for rule generation + recovery on failure. `select_for_task()` enforces at least L3_COMPLEX.
+- `PROGRAM_EXECUTION` is never auto-detected by Stage 1/Stage 2 — it requires explicit invocation via `select_for_task()` by the ASP pipeline (`BaseQAPipelineWithASP`) after verifying both ASP context AND modification patterns.
 
 ---
 
 ## Summary: All Approaches Compared
 
-| Approach | Accuracy | Latency | Impl. Effort | Training Data? | Best For |
-|----------|----------|---------|---------------|----------------|----------|
-| **A. Multi-Signal Rules** | ★★★ | <1ms | 1-2 days | No | Quick win, immediate improvement |
-| **B. spaCy NLP** | ★★★☆ | 2-5ms | 2-3 days | No | Structural complexity |
-| **C. Semantic Router** | ★★★★ | 5-15ms | 3-5 days | Examples only | Semantic understanding |
-| **D. LLM Classifier** | ★★★★★ | 200-500ms | 1 day | No | Best accuracy, highest latency |
-| **E. Cascade/AutoMix** | ★★★★★ | 0-2x | 1-2 weeks | No | Cost optimization |
-| **F. Hybrid Two-Stage** | ★★★★☆ | 2-15ms | 1 week | No | Best balance |
+| Approach | Accuracy | Latency | Impl. Effort | Training Data? | Best For | Status |
+|----------|----------|---------|---------------|----------------|----------|--------|
+| **A. Multi-Signal Rules** | ★★★ | <1ms | 1-2 days | No | Quick win, immediate improvement | **IMPLEMENTED** (Stage 2) |
+| **B. spaCy NLP** | ★★★☆ | 2-5ms | 2-3 days | No | Structural complexity | Not needed |
+| **C. Semantic Router** | ★★★★ | 5-15ms | 3-5 days | Examples only | Semantic understanding | Future (Phase 2) |
+| **D. LLM Classifier** | ★★★★★ | 200-500ms | 1 day | No | Best accuracy, highest latency | Not planned |
+| **E. Cascade/AutoMix** | ★★★★★ | 0-2x | 1-2 weeks | No | Cost optimization | Not planned |
+| **F. Hybrid Two-Stage** | ★★★★☆ | 2-15ms | 1 week | No | Best balance | **IMPLEMENTED** (Stage 1 + 2) |
 
 ---
 
-## Recommended Phased Approach
+## Phased Approach
 
-### Phase 1 (Immediate — Level 1): Approach A + F hybrid
-1. Replace binary keyword matching with **multi-signal weighted scoring** → produces L0-L4
-2. Add **task type detection** (math/calculation vs. comparison/synthesis vs. creative) using simple patterns
-3. Map (Level, TaskType) → specific model from your bucket
-4. Keep existing fallback chain as safety net
+### Phase 1: Approach A + F hybrid — COMPLETED
+1. Replaced binary keyword matching with **multi-signal weighted scoring** (`_stage2_full_scoring()`) → produces L0-L4
+2. Added **task type detection** — 6 types: RETRIEVAL, MATH, COMPARISON, ANALYSIS, CREATIVE, PROGRAM_EXECUTION
+3. Mapped (Level × TaskType) → specific model via `_build_routing_table()` (5 × 6 table)
+4. Two-stage pipeline: `_stage1_fast_exit()` (<1ms, ~60% of questions) + `_stage2_full_scoring()` (<5ms)
+5. Authorized models validation + cross-provider fallback chain
+6. Gemini thinking config (thinkingLevel for 3.x, thinkingBudget for 2.5)
+7. Test harness: 139 questions across 7 workflow groups (+ pytest regression in `test_routing_agent.py`)
 
-### Phase 2 (Next iteration): Add Approach C
+### Phase 1.5: GP Reasoning Engine (SIG-PRE) Integration — COMPLETED
+1. Added `PROGRAM_EXECUTION` task type + `PROGRAM_EXECUTION_PATTERNS` (7 regex patterns)
+2. Added `select_for_task()` for explicit task type routing (bypasses Stage 1/Stage 2 task detection)
+3. `PROGRAM_EXECUTION` always maps to SIG-PRE 0.1 + Claude Opus 4.6 at all levels (enforces >= L3_COMPLEX)
+4. Two-condition safety: ASP context + modification patterns must BOTH match (checked by `BaseQAPipelineWithASP`, not by the router)
+5. `ASPProgramExecutionAgent` with `RuleGenerator`, Option C execution (SIG-PRE primary + Claude recovery)
+
+### Phase 1.6: External Context Enrichment — COMPLETED
+1. Config-gated external context (`enable_external_context`, `external_context_timeout`, `external_context_max_tokens`) in `GroundedAnswerEngineConfig`
+2. Two-layer detection via `_needs_external_context(decision, question)`:
+   - Layer 1: RouterDecision-based (CREATIVE/COMPARISON → yes; ANALYSIS + low confidence → yes; L3+ + low confidence → yes)
+   - Layer 2: Domain-specific keyword patterns keyed by `ZeusTool` workflow_id (`_DOMAIN_PATTERNS_BY_WORKFLOW`)
+3. Parallel execution: search fires via `asyncio.create_task` after `router.route()`, collected before LLM call — near-zero added latency
+4. Search provider fallback: Perplexity primary (`ask_perplexity_async`) → Gemini fallback (`gemini_web_search_async`)
+5. Domain search context enrichment: `_DOMAIN_SEARCH_CONTEXT_BY_WORKFLOW` appends company/industry/domain keywords to search queries
+6. Token budget enforcement via `trim_nl_text` (tiktoken-based, sentence boundary preservation)
+7. Supplementary context prompt injection — clearly marked block instructing LLM to treat evidence as PRIMARY source of truth
+8. Extensible architecture: `_gather_external_sources` uses `asyncio.gather(return_exceptions=True)` — add new `_fetch_*_context` methods for KG, etc.
+9. Enabled for Composition Workflow (`RheemPricingWarrantyCompositionWorkflowQAPipeline`)
+
+### Phase 2 (Next iteration): Add Approach C — NOT YET
 - Add **embedding similarity** (Semantic Router) for the ambiguous middle zone where rules struggle
+- Production log analysis → tune scoring weights
+- Router confidence → dynamic fallback depth
 
-### Phase 3 (Level 2 — future): GP Reasoning Engine
-- Integrate GP Reasoning Engine as an option alongside LLMs in the routing table
+### Phase 3 (Future): Advanced Routing — NOT YET
+- REASONING task type for multi-step logical chains
+- A/B testing framework for routing decisions
+- Workflow-specific complexity bonus (from real production data)
+- Multi-agent execution routing (SQL, Python, Prolog, Constraint Programming alongside ASP)
 
 ---
 
