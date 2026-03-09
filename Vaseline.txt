@@ -443,3 +443,24 @@ Total : 3,889,291,772.8 == $3.9 billon.
 
 --> For that I can do better like Stated that explicitly on the Response that all data collected are from 2025-01-01 to help people don't confusing
 
+
+
+
+===
+
+okay, I have a sync code problem now.
+
+  I have 2 repo: zeus-service in /Users/thanhnh/Workspace/Growth_Protocol/zeus-service and reasoning-engine in /Users/thanhnh/Workspace/Growth_Protocol/reasoning-engine
+
+  The source code in /Users/thanhnh/Workspace/Growth_Protocol/zeus-service/app/workflow/question_answering_fr SHOULD BE SIMILAR with source code in
+  /Users/thanhnh/Workspace/Growth_Protocol/reasoning-engine/app/agents/reasoning_orchestrator
+
+  Actually, they are should be 100% the same EXPCEPT the import and libraries because they are belong 2 differen repos then the libs and importing could be differnt.
+
+
+  We made a lot of efforts to keep code in reasoning_orchestrator in reasoning_engine are synced with question_answering_fr in zeus-service because in the future I only want to keep the
+  reasoning_orchestrator in reasoning_engine ONLY, and the call in Zeus-Service for that feature will be the API call to Reasoning Engine. For the current legacy code, I usually write code on zeus-service
+  firstly so must be sync the changes with reasonng-engine.
+
+  Your task is scan EVERY python files in question_answering_fr and provide the upate to the associated file in reasoning_orchestrator. Update with me with manually edits for each step so I can know what
+  things you are updating.

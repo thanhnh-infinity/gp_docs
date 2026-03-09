@@ -102,14 +102,29 @@ Both planners return the same `SemanticQueryPlan` type, making them interchangea
 
 #### 2b. Deterministic Query Planner (`deterministic_query_planner.py`)
 
-**Purpose:** Fast, rule-based planning without LLM calls (Phase A implementation).
+**Purpose:** Fast, rule-based planning without LLM calls (Phase A implementation, tuned in Phase A.1).
 
 **Sub-components:**
-- `DeterministicSearchIndex` — BM25 lexical + optional embedding search for section selection
-- `DeterministicFieldSelector` — Token/synonym/description scoring for field selection
-- `DeterministicRecordPlanner` — Rule-based intent detection for record plan (top_k, all, filter, aggregate)
+- `DeterministicSearchIndex` — BM25 lexical + optional embedding search for section selection (used in search mode only)
+- `DeterministicFieldSelector` — Token/synonym/description scoring with content quality gate + adaptive thresholds for field selection
+- `DeterministicRecordPlanner` — Rule-based intent detection with broad question patterns + forward-looking sort preference
 
-**When to use:** For workflows where latency matters and questions follow predictable patterns.
+**Key design decisions (from Phase A.1 tuning):**
+- **Suggestion mode includes ALL suggested partitions** — no BM25 relevance gate. The content quality gate in field selection decides `mode="none"` vs real fields per section. This was the single biggest accuracy win (~15% gain).
+- **Content quality gate** (`content_quality_gate=0.18`): At least one field must have meaningful content relevance (excluding structural importance) for a section to get fields. Prevents irrelevant sections from polluting the plan.
+- **Config-driven domain affinity**: Domain keywords and section prefixes are externalized to `SemanticQueryPlannerConfig` — new domains scale without code changes.
+- **Numbered variant routing**: Detects "scenario N" references to ensure matching sections are included.
+
+**Measured accuracy** (vs Gemini 3.0 Flash reference, 40% section Jaccard + 60% field Jaccard):
+
+| Workflow | Accuracy |
+|----------|----------|
+| Competitive Pricing | 83.4% |
+| Warranty Intelligence | 81.8% |
+| Pricing Simulator | 62.5% |
+| Composition | 67.7% |
+
+**When to use:** For workflows where latency matters and questions follow predictable patterns. Currently at 80%+ for 2/4 workflows.
 
 ### 3. Working Memory Optimizer (`_optimize_query_plan` in `qa_base_pipeline.py`)
 
@@ -776,7 +791,10 @@ Canonical NLG renderer living inside the `ASPReasonerResponse` data model in the
 | `engine/asp_program_execution_agent.py` | ASP program modification + re-execution agent (RuleGenerator, ExecutionResult, Option C) |
 | `engine/check_router_agent.py` | Experiment harness for 139 questions across 6 workflows |
 | `engine/semantic_query_planner.py` | LLM-based query planning |
-| `engine/deterministic_query_planner.py` | Rule-based query planning (no LLM) |
+| `engine/deterministic_query_planner.py` | Rule-based query planning orchestrator (no LLM) — section selection, domain affinity, config-driven |
+| `engine/ontology_driven_deterministic/deterministic_field_selector.py` | Token/synonym/description scoring with content quality gate + adaptive thresholds |
+| `engine/ontology_driven_deterministic/deterministic_record_planner.py` | Rule-based intent detection (top_k/all/filter/aggregate) with broad question patterns |
+| `engine/ontology_driven_deterministic/deterministic_search_index.py` | BM25 + embedding search index for section selection (search mode) |
 | `engine/semantic_query_planner_factory.py` | Strategy pattern factory |
 | `engine/structured_data_retriever.py` | Pandas-based data retrieval |
 | `engine/reasoning_protocol_designer.py` | Dynamic reasoning protocol generation |
@@ -799,6 +817,21 @@ Canonical NLG renderer living inside the `ASPReasonerResponse` data model in the
 | Deterministic field scoring | Done | `DeterministicFieldSelector` |
 | Rule-based record plan | Done | `DeterministicRecordPlanner` |
 | LLM batch planner as fallback | Done | Factory pattern with `DETERMINISTIC` strategy |
+
+### Phase A.1: Deterministic Planner Tuning — COMPLETED
+
+| Item | Status | Implementation |
+|------|--------|----------------|
+| Include all suggested partitions (bypass BM25 gate) | Done | `_select_sections()` — +15% accuracy gain |
+| Content quality gate for field selection | Done | `DeterministicFieldSelector.content_quality_gate=0.18` |
+| Adaptive relative threshold for large sections | Done | `DeterministicFieldSelector.relative_threshold_ratio=0.40` + scaling |
+| Config-driven domain affinity (keywords + section prefixes) | Done | `SemanticQueryPlannerConfig.domain_keywords`, `domain_section_prefixes` |
+| Numbered variant routing (scenario N detection) | Done | `SemanticQueryPlannerConfig.numbered_variant_pattern` |
+| Broad question detection expansion | Done | `DeterministicRecordPlanner` — design, optimal, optimize, highlight, etc. |
+| Forward-looking sort field preference | Done | `DeterministicRecordPlanner._infer_sort_field()` — expected/optimal prefix preference |
+| Business concept synonyms (lean set) | Done | `DeterministicFieldSelector` — opportunity, impact, segment, market, grossprofit |
+| Experiment infrastructure (`--dqp-only` runner) | Done | `experiment_semantic_query_planner.py` with DQP-only mode |
+| Accuracy: CP 83.4%, WI 81.8%, PS 62.5%, Comp 67.7% | Done | See `deterministic_semantic_query_planner_improvement.md` for details |
 
 ### Phase 1: Smart Router Agent — COMPLETED
 
@@ -848,14 +881,18 @@ Canonical NLG renderer living inside the `ASPReasonerResponse` data model in the
 | Composition workflow enabled | Done | `RheemPricingWarrantyCompositionWorkflowQAPipeline` with `enable_external_context=True` |
 | Fallback to public search message improvement | Done | Two-case disclaimer (expired session + wrong tool) in `qa_base_pipeline.py` |
 
-### Phase B: Confidence Gating — NOT YET
+### Phase B: Hybrid Planner + Confidence Gating — NOT YET
 
-| Item | Status |
-|------|--------|
-| Confidence gating + margin thresholds | Planned |
-| Split batch planner into targeted mini-batches | Planned |
-| Cache at the right granularity | Planned |
-| `HybridQueryPlanner` (deterministic first, LLM fallback) | Scaffolded (`NotImplementedError`) |
+With DQP at 80%+ for 2/4 workflows (Phase A.1), hybrid is now more viable — ~60-70% of questions can skip LLM entirely.
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Confidence scoring from field selection signals | Planned | `max_content_score`, none-section count, sort/filter match quality |
+| `HybridQueryPlanner` (deterministic first, LLM fallback) | Scaffolded (`NotImplementedError`) | Enum exists: `SemanticQueryPlannerStrategy.HYBRID` |
+| Embedding-based field selection (replace token overlap) | Planned | **Highest priority** — would close gap for PS (62.5%) and Comp (67.7%) |
+| Distilled record mode classifier (from LLM outputs) | Planned | Training data available from experiment runs |
+| Split batch planner into targeted mini-batches | Planned | |
+| Cache at the right granularity | Planned | |
 
 ### Phase 2: Router Agent Improvements — NOT YET
 
