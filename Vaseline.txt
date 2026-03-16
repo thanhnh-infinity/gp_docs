@@ -464,3 +464,43 @@ okay, I have a sync code problem now.
 
   Your task is scan EVERY python files in question_answering_fr and provide the upate to the associated file in reasoning_orchestrator. Update with me with manually edits for each step so I can know what
   things you are updating.
+
+
+
+    The changes would be in pick_up_llm_with_fallbacks and the InstrumentedChat* classes:
+
+  1. Increase timeouts: Primary from 7→30s, fallback from 5→20s. The "fast tool detection" use case still works (returns in 3-5s, doesn't hit the timeout). The "synthesis" use case no longer cascades.
+  2. Add thought_signature sanitization in format_for_model before messages are sent to any model — strip thought_signature and thinking metadata from additional_kwargs on all AIMessages in history.
+  3. Keep the no-timeout safety net at the end of the fallback chain (already exists at position 8).
+
+
+
+
+  Okay, I have more complicated data set domain : Pricing Comparision Intelligence
+
+
+DomainConfig(
+            name="Pricing Competitive Intelligence",
+            partition_names=_PRICING_CI_PARTITIONS,
+        ),
+
+
+/Users/thanhnh/Workspace/Growth_Protocol/zeus-service/app/workflow/local_db/workflow_outputs/rheem_composition/competitive_pricing_intelligence_rheem_workflow.json ===> JSON File contains structure-data
+for each parition as well.
+
+
+And here is the full workflow artifact for that ( containin gthe ontology as well)
+
+Now following the job we did for Warranty and Pricing Simulator , please doing the same here:
+
+- Completely, comprehensive, strong, powerful knowledge capture EVERY things, EVERY relationships in the data set to be handled and answered all question related to that domain
+- Make sure all fields in all partition dataset has been resolved, covered and in knowledge graph
+- Fill all gaps framework-graps or data gaps.
+
+===
+
+
+Okay, thanks. Now again full review, serious review to make sure our knowledge_graph_builder production-grade, enterprise-level, best-practice.
+
+and make sure that all things we provided in Knowledge Graph in Neo4j is the best and strong and solid and perfect foundation for us to do the Neural Symbolic AI reasoning, Symbolic AI REasoning and LLM
+Reasoning over the foundation KG that we built.
