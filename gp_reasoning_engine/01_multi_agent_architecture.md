@@ -23,7 +23,10 @@ The Reasoning Engine is a **well-structured symbolic reasoning engine with workf
 | LLM integration | Complete | LiteLLM (provider-agnostic) |
 | OWL/RDF ontology engine | Complete | owlready2, PELLET, SPARQL |
 | Knowledge graph | Complete | Neo4j async integration |
+| **Knowledge Graph Builder** | **Complete** | **11-phase pipeline: structured + NL extraction → entity resolution → relationship inference → community detection → Neo4j insertion with typed relationships. Domain-aware SemanticaEngine. See `02_workflow_kg_architecture.md`** |
 | OSI Engine (Client Ontology) | Complete | YAML → RDF/OWL + Pydantic + SQL |
+| **Router Agent** | **Complete** | **Multi-signal complexity scoring (L0-L4), task type classification, (ReasoningLevel × TaskType) → Model routing table, cross-provider fallback chains, Gemini thinking levels** |
+| **SIG-PRE API (LLM + Intelligence + Visualization)** | **Complete** | **LLM completion with auto-chunking, Perplexity/Gemini intelligence search, Claude Opus visualization generation** |
 
 ### What's MISSING
 
@@ -36,12 +39,15 @@ The Reasoning Engine is a **well-structured symbolic reasoning engine with workf
 | Hierarchical agent delegation | Missing | Flat structure only |
 | Reasoning consensus / voting | Missing | No mechanism to merge results from multiple reasoners |
 | Agent failure recovery | Partial | Fallback models only, no fallback agents |
-| Router agent | Missing (TODO) | `router_agent.py` is empty with TODO comment |
+| **Symbolic reasoning over KG** | **Ready to build** | **KG is production-grade in Neo4j — need agents that traverse it for formal reasoning** |
 
 ### Current Architecture Flow
 
 ```
   User Question
+       │
+       ▼
+  Router Agent (L0-L4 complexity scoring)
        │
        ▼
   QA Pipeline (one of 3 workflows)
@@ -60,9 +66,22 @@ The Reasoning Engine is a **well-structured symbolic reasoning engine with workf
        ├── 4. setup_reasoner() — via ASPReasonerFactory
        ├── 5. combine_facts() — merge all facts
        └── 6. solve_reasoning_task() — execute single reasoner
+
+  PARALLEL (offline, not per-query):
+
+  Knowledge Graph Builder (11-phase pipeline)
+       │
+       ├── Structured extraction (schema-driven, deterministic)
+       ├── NL extraction (domain-aware SemanticaEngine, 3-layer)
+       ├── Assembly → Entity resolution → Relationship inference
+       ├── Schema validation → Community detection
+       └── Neo4j insertion (typed relationships, 6-check validation)
+       → Produces: ~15K entities, ~80K relationships, typed, confidence-scored
 ```
 
-**The problem:** One workflow = one pipeline = one reasoner. No composition, no coordination, no hybrid reasoning.
+**The problem:** One workflow = one pipeline = one reasoner. No composition, no coordination, no hybrid reasoning. The KG is built but not yet consumed by reasoning agents.
+
+**The opportunity:** The production-grade KG in Neo4j is ready. The next step is building agents that reason OVER it — combining KG traversal with symbolic reasoning (Clingo), ontology inference (OWL), and LLM augmentation.
 
 ## Why Multi-Agent Is the Natural Next Step
 
@@ -199,13 +218,15 @@ Our agents are **formal reasoners** — ASP solvers that find provably correct a
 |-----------|-----------|------------|-----------------|-----------------|
 | ASP/Clingo solver | Core | None | None | Core + exposed via MCP |
 | OWL/RDF ontology | Core | None | None | Core + exposed via MCP |
-| Knowledge graph | Core | None | None | Core + exposed via MCP |
-| LLM integration | LiteLLM | LiteLLM | Claude-only | LiteLLM |
+| Knowledge graph | **Production KG** (15K entities, 80K rels, typed, confidence-scored) | None | None | Core + exposed via MCP |
+| **KG Builder** | **11-phase pipeline** (structured + NL, domain-aware, typed rels) | None | None | Core |
+| LLM integration | LiteLLM (Vertex AI + OpenAI + 100+ providers) | LiteLLM | Claude-only | LiteLLM |
+| **Router Agent** | **Complete** (L0-L4, multi-signal, cross-provider fallback) | Built-in LLM routing | Built-in | Complete |
 | Deterministic reasoning | Full | None | None | Full + exposed via MCP |
 | Probabilistic reasoning | Full | None | None | Full + exposed via MCP |
 | NeurASP | Full | None | None | Full |
 | Agent orchestration | Gap | Strong | Moderate | Gap (build our own) |
-| External accessibility | API only | A2A | Agent SDK | **Any MCP client** |
+| External accessibility | API + SIG-PRE endpoints | A2A | Agent SDK | **Any MCP client** |
 | Formal correctness | Provable | None | None | Provable |
 
 ---
@@ -380,8 +401,9 @@ In a multi-agent system, this becomes even more powerful:
        │
        ├── SymbolicAgent (Clingo): applies GP rules → flag_for_review(order_42)
        │
-       ├── KnowledgeGraphAgent: enriches with customer context
-       │   (order_42 belongs to customer X, who has high credit rating)
+       ├── KnowledgeGraphAgent: enriches with context from production KG
+       │   (traverses typed relationships: :MANUFACTURED_BY, :SOLD_IN_MARKET, etc.
+       │    uses confidence scores, extraction_type, community summaries)
        │
        └── VerificationAgent: checks ontology consistency
            (is the flagging consistent with GP business rules?)
@@ -428,13 +450,30 @@ Build the orchestration layer:
 
 **Impact:** True multi-agent reasoning. Multiple agents work together on the same question.
 
-## Priority 4: Complete the Router Agent
+## Priority 4: Complete the Router Agent — ✅ DONE (March 2026)
 
-The empty `router_agent.py` with `"TODO: Don't use LLM, rely on ScaPy, Knowledge Graph query, or hard coded rules based on Agent Ontology"` — this is the right instinct. Build it using ontology-driven routing, not LLM-based routing.
+The Router Agent is now fully implemented in `app/agents/reasoning_orchestrator/engine/router_agent.py`:
+- **Two-stage routing:** Fast regex exit (<1ms) for obvious cases + multi-signal complexity scoring for ambiguous questions
+- **5 reasoning levels:** L0 (Direct Lookup) → L4 (Creative/Strategic)
+- **6 task types:** retrieval, math, comparison, analysis, creative, program_execution
+- **(ReasoningLevel × TaskType) → Model routing table** with cross-provider alternation
+- **Workflow-specific complexity bonuses** (configurable per workflow)
+- **Fallback chains:** Level-specific, cross-provider (Gemini ↔ Claude)
+- **Gemini thinking levels:** Low/medium/high based on task complexity
+- Works with `workflow_id=None` for standalone usage (outside Q&A framework)
 
-**Impact:** Intelligent question routing to the right agent team.
+## Priority 5: KG-Based Reasoning Agent — NEW
 
-## Priority 5: Verification Agent
+Now that the Knowledge Graph is production-grade in Neo4j (see `02_workflow_kg_architecture.md`), the next agent to build is a `KnowledgeGraphReasoningAgent` that:
+- Traverses the typed KG (`:MANUFACTURED_BY`, `:SOLD_IN_MARKET`, etc.) for structured retrieval
+- Uses confidence scores and extraction_type for source-aware reasoning
+- Combines KG traversal with symbolic reasoning (Clingo) for complex analytical queries
+- Leverages community summaries for GraphRAG-style global search
+- Uses relationship axioms (inverse_of, symmetric, transitive) for query expansion
+
+**Impact:** Bridges the KG we built with the symbolic reasoning engine — the core of neural-symbolic AI.
+
+## Priority 6: Verification Agent
 
 An agent that validates reasoning results against the knowledge graph and ontology:
 - Are the derived facts consistent with the ontology?
