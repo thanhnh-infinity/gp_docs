@@ -155,7 +155,7 @@ Both planners return the same `SemanticQueryPlan` type, making them interchangea
 
 | Mode | Description |
 |------|-------------|
-| `all` | Return all rows (capped by `max_rows`, default 200) |
+| `all` | Return all rows (capped by `max_rows`, default 200), optionally sorted by `sort_by` field |
 | `top_k` | Return top K rows sorted by a field |
 | `filter` | Return rows matching filter conditions (==, !=, contains, >, <, etc.) |
 | `aggregate` | Group-by with aggregations (sum, count, mean, min, max) |
@@ -163,6 +163,7 @@ Both planners return the same `SemanticQueryPlan` type, making them interchangea
 
 **Guardrails:**
 - Row capping: `mode="all"` respects `max_rows` to prevent token explosion
+- Relevance ordering: `mode="all"` with `sort_by` sorts rows by the most analytically important field before capping (uses `_apply_top_k` internally)
 - Field projection: Returns only selected columns
 - Fail-safe: Configurable behavior on bad query plans (`fail_open_on_bad_plan`)
 - `skip_reason` logging when a partition is intentionally skipped by optimizer
@@ -174,7 +175,7 @@ Both planners return the same `SemanticQueryPlan` type, making them interchangea
 **Capabilities:**
 - Non-negotiable rules: No fabrication, no external knowledge, no contradiction
 - Token budget: Max 200K input tokens with overflow handling
-- Map-reduce: Automatic chunking when evidence exceeds `max_input_tokens`
+- **Structured Map-Reduce**: Automatic chunking when evidence exceeds `max_input_tokens`, with structured JSON intermediate output for reasoning preservation (see section below)
 - Repair mechanism: Retries with context if first attempt fails
 - **Smart RouterAgent**: Selects the optimal model via 5-level × 6-task-type routing (see section below)
 - **External Context Enrichment**: Optional web search context for questions needing market/industry background (see section below)
@@ -395,7 +396,7 @@ The RouterAgent replaces the old binary Flash-vs-Pro routing with a deterministi
 |-------|-----------|------|------------|----------|----------|-------------------|
 | **L0** | Flash | Flash | Flash | Flash | Flash | Opus |
 | **L1** | Flash | Flash | Flash | Flash | Haiku | Opus |
-| **L2** | Pro 3.0 | Pro 3.0 | Sonnet | Sonnet | Sonnet | Opus |
+| **L2** | Pro 3.1 | Pro 3.1 | Sonnet | Sonnet | Sonnet | Opus |
 | **L3** | Pro 3.1 | Pro 3.1 | Opus | Opus | Opus | Opus |
 | **L4** | Pro 3.1 | Pro 3.1 | Opus | Opus | Opus | Opus |
 
@@ -459,13 +460,12 @@ When the caller already knows the task type (e.g., `BaseQAPipelineWithASP` has v
 
 `GroundedAnswerEngineConfig.authorized_models` is the **single source of truth** for which models the router may use. If a routing table selection is not in the authorized list, the router gracefully degrades by walking down levels (same task type) until it finds an authorized alternative.
 
-**Default authorized models (8):**
+**Default authorized models (7):**
 
 | Model | Provider | Role |
 |-------|----------|------|
 | Gemini 3.0 Flash | Vertex AI | Fast/cheap (L0–L1) |
-| Gemini 3.0 Pro | Vertex AI | Balanced structured data (L2) |
-| Gemini 3.1 Pro | Vertex AI | Heavy structured data (L3–L4) |
+| Gemini 3.1 Pro | Vertex AI | Structured data (L2–L4) |
 | Claude 4.5 Haiku | Vertex AI | Fast creative (L1) |
 | Claude 4.6 Sonnet | Vertex AI | Balanced language quality (L2) |
 | Claude 4.6 Opus | Vertex AI | Best language quality (L3–L4) |
@@ -923,3 +923,431 @@ With DQP at 80%+ for 2/4 workflows (Phase A.1), hybrid is now more viable — ~6
 | Rule modification/removal (requires GP-DRE service changes to accept full programs) | Planned |
 | RuleGenerator post-training models (distilled ASP expert, syntax-aware generation) | Planned |
 | Multi-agent execution (SQL, Python, Prolog, Constraint Programming alongside ASP) | Planned |
+
+---
+
+## Recent Enhancements
+
+### 1. Relevance-Ordered `mode=all` (SQP + Data Retriever)
+
+**Problem:** When `mode=all` is used, rows are returned in arbitrary storage order. If `max_rows` caps truncate data, the most relevant rows may be cut off — the grounded answer LLM reasons over less important data.
+
+**Solution:** `RecordPlan` already has `sort_by` and `descending` fields. We now:
+1. Instruct the SQP LLM to provide `sort_by` even for `mode=all` plans
+2. Parse `sort_by`/`descending` in `_validate_record_plan` for `mode=all`
+3. Preserve LLM's `sort_by` when heuristic overrides force `mode=all`
+4. Sort rows in the data retriever before capping
+
+**Files changed:**
+- `semantic_query_planner.py` — prompt instructions (4 variants: parallel basic/aggregate, batch basic/aggregate), `_validate_record_plan` parser, heuristic override preservation
+- `structured_data_retriever.py` — `mode=all` branch uses `_apply_top_k` for sorting when `sort_by` is set
+
+**Prompt wording (important — affects LLM behavior):**
+```
+"When using mode=all, also provide sort_by with the most analytically important numeric field and descending=true/false so rows are ordered by relevance."
+```
+> **Lesson learned:** An earlier version used `"IMPORTANT: For ALL modes..."` which was too aggressive and caused the LLM to change its mode/filter decisions for aggregate questions. The softer, scoped wording above avoids this regression.
+
+**Backward compatible:** If `sort_by` is `None` (LLM doesn't provide it, or old plans), the retriever behaves exactly as before.
+
+**Flow:**
+```
+SQP decides mode=all for a section
+  → LLM also provides sort_by=<important_field>, descending=true/false
+  → _validate_record_plan parses sort_by for mode=all
+  → Heuristic override preserves sort_by when forcing mode=all
+  → Data retriever: _apply_top_k(data, k=max_rows, sort_by=...) → sorted + capped
+  → Grounded answer LLM gets most relevant rows first
+```
+
+### 2. Structured Map-Reduce for GroundedAnswerEngine
+
+**Problem:** When evidence exceeds token limits, the engine splits data into chunks and runs map-reduce. Previously, each map-phase chunk produced **free-text prose** — narrative essays with redundant boilerplate, imprecise numbers buried in paragraphs, and ambiguous framing that the reduce phase struggled to synthesize.
+
+**Solution:** Each map-phase chunk now produces a **structured JSON reasoning artifact** instead of prose. The reduce phase then synthesizes these precise, structured findings into the final narrative answer.
+
+**Structured output schema** (`_MAP_PHASE_STRUCTURED_SCHEMA`):
+
+| Field | Purpose | Reasoning Type |
+|-------|---------|---------------|
+| `data_scope` | What data was analyzed (sections, row range, temporal/dimensional scope) | Context |
+| `reasoning_chain` | Step-by-step thinking: identify → compute → compare → infer → project → evaluate | **How** (process reasoning) |
+| `key_findings` | Precise facts with data points, confidence, source fields | **What** (factual) |
+| `relationships_and_causality` | Entity connections: correlation, causal, dependency, contradiction, temporal sequence | **Why** (causal reasoning) |
+| `patterns_and_anomalies` | Trends, seasonality, outliers, clusters, distribution skew, threshold breaches | **When/Where** (pattern recognition) |
+| `hypotheses_and_what_if` | Counterfactual/forward-looking reasoning with supporting + counter evidence | **What-if** (scenario reasoning) |
+| `quantitative_summary` | Exact numeric values with units and context (no rounding) | **How much** (quantitative) |
+| `gaps_and_limitations` | What the chunk could NOT answer or did not have data for | Uncertainty management |
+
+**Key design decisions:**
+- **Reasoning-first**: `reasoning_chain` captures the full thinking process, not just conclusions
+- **Evidence + interpretation always paired**: Every finding has its reasoning context
+- **Uncertainty preserved**: Confidence levels, counter-evidence, gaps — reduce needs to reason about certainty
+- **Flexible**: LLM includes applicable sections, omits empty ones — no wasted tokens
+- **Fallback safe**: If JSON parsing fails, raw text is used (backward compatible)
+- **Single chunk still reduces**: Even 1 structured artifact goes through reduce to produce user-facing prose
+
+**Map-phase system prompt** (`_MAP_PHASE_SYSTEM_PROMPT`):
+- Separate from the main grounded answer system prompt
+- Instructs LLM to produce valid JSON matching the schema
+- Emphasizes exhaustive reasoning: capture EVERYTHING for what, when, where, why, how, what-if
+- Preserves exact numeric values (no rounding in quantitative_summary)
+
+**Reduce-phase prompt** (`_REDUCE_PHASE_PROMPT_TEMPLATE`):
+- Explicit merge instructions: sum quantities, chain reasoning steps, resolve conflicts
+- Hypothesis strengthening/weakening across chunks
+- Gap reconciliation: if all chunks share a limitation, it's real; if only one, others may have covered it
+
+**Why structured is better than prose:**
+
+| Aspect | Free text (before) | Structured JSON (now) |
+|--------|-------------------|----------------------|
+| Token efficiency | ~500-2000 tokens/chunk | ~100-300 tokens/chunk |
+| Reduce accuracy | Must parse prose | Direct field access |
+| Numeric precision | "$6,724.70 in claims" (lossy) | `6724.70` (exact) |
+| Conflict resolution | Ambiguous framing | Compare confidence + specificity |
+| Reasoning preservation | Lost in narrative | Full chain preserved |
+| Scalability | Budget exhausted ~5 chunks | Handles 10-20+ chunks |
+
+**Files changed:**
+- `grounded_answer.py`:
+  - Added `_MAP_PHASE_STRUCTURED_SCHEMA`, `_MAP_PHASE_SYSTEM_PROMPT`, `_REDUCE_PHASE_PROMPT_TEMPLATE`
+  - Added `_build_map_phase_user_prompt()` — builds evidence payload per chunk
+  - Added `_parse_map_result()` — JSON parser using `llmus.clean_json_from_markdown` + brace-scanning fallback
+  - Rewrote `_answer_using_map_reduce()` — structured map phase, JSON parsing with fallback, new reduce phase
+
+**What did NOT change:**
+- Single-shot answer path (no token overflow) — completely untouched
+- Chunking logic (`_chunk_evidence_by_token_budget`, `_split_large_evidence`)
+- `build_grounded_reasoning_user_prompt()` — still used by the single-shot path
+- System prompt, config, models, fallback chains
+- Aggregate mode in SQP/retriever — zero impact
+
+**Future consideration (deferred):**
+- **Cross-chunk context sync**: Each chunk currently reasons independently. A future enhancement could do a two-pass map: first pass extracts structured summaries, second pass re-processes chunks WITH other chunks' summaries as context. The structured format makes this feasible without exploding tokens.
+
+### 3. Computed Fields (Post-Aggregation Derived Columns)
+
+**Problem:** Questions like "If you use last PO price × 2025 quantities, what is the projected 2026 spend?" require cross-field computation (`price × quantity`) per item group, then summing. The aggregation engine could only compute `sum(price)` and `sum(quantity)` separately — never `sum(price × quantity)`. The LLM received separate totals and produced incorrect results (e.g., $79.1M instead of the correct $10.5B).
+
+**Solution:** Added `computed_fields` to `RecordPlan` — post-aggregation derived columns computed in pandas after group-by aggregation, before the grand total and row cap.
+
+**Data model:**
+```python
+class ComputedField(BaseModel):
+    expression: str  # e.g., "last_po_price * total_qty_2025"
+    alias: str       # e.g., "estimated_spend_2026"
+```
+
+**Safe expression evaluator** (`_eval_computed_field` in `structured_data_retriever.py`):
+- Uses Python's `ast` module — parses expression to AST, evaluates node-by-node
+- **Allowed**: column references, numeric literals, all arithmetic operators (`+`, `-`, `*`, `/`, `//`, `%`, `**`), parentheses, unary `-`/`+`
+- **Rejected**: function calls, imports, attribute access, list comprehensions, ternary expressions — all raise `ValueError`
+- **Division/modulo by zero**: replaced with `NaN` (no crash)
+- **Caller wraps in try/except**: if expression fails, aggregation continues without the computed field (best-effort)
+
+**SQP prompt rule:**
+```
+11) When the question requires a cross-field computation after aggregation, use "computed_fields"
+    to define derived columns. Expressions MUST reference aggregation aliases (not raw field names).
+    Supports: +, -, *, /, **, parentheses, and numeric literals.
+    Examples: "last_po_price * total_qty", "(revenue - cost) / revenue * 100"
+```
+
+**Grand total for computed fields:**
+- Computed as `sum(computed_column)` across ALL groups BEFORE the 200-row cap
+- This ensures the headline number is exact even when detail rows are capped
+
+**Verification:** Tested against raw pandas computation on 41,704 groups / 1.1M filtered rows — grand total matches to the penny ($11,907,390,980.32).
+
+**Files changed:**
+- `semantic_query_planner.py` — `ComputedField` model, `computed_fields` on `RecordPlan`, SQP prompt rules + output schema, parser in `_validate_record_plan`
+- `structured_data_retriever.py` — `_eval_computed_field()` (AST-based evaluator), computed field execution after aggregation, grand total computation for computed fields, passed through from record plan
+
+### 4. Current Date Injection for Temporal References
+
+**Problem:** "YTD" queries generated `>= 2025-01-01` (data start date) instead of `>= 2026-01-01` (current year) because the SQP LLM didn't know today's date.
+
+**Solution:**
+- **SQP**: Inject `"current_date": "2026-03-23"` into the user prompt JSON. Added rule: "Use current_date to resolve YTD, MTD, QTD, 'last year', etc."
+- **DQP**: Added `_resolve_temporal_filters()` in `DeterministicRecordPlanner` — deterministic date resolution for detected temporal references (`ytd` → `>= YYYY-01-01`, `mtd` → `>= YYYY-MM-01`, etc.). Injected into the plan via wrapper `plan_records()` → `_plan_records_core()`.
+
+**Date comparison fix in retriever:** The retriever's filter engine treated date strings like `"2026-01-01"` as numeric (failed with "not numeric" warning). Added YYYY-MM-DD pattern detection → `pd.to_datetime` comparison with timezone-aware localization (`col_date.dt.tz` match).
+
+**Files changed:**
+- `semantic_query_planner.py` — `current_date` in user prompts, rule 9 in system prompts
+- `deterministic_record_planner.py` — `_resolve_temporal_filters()`, `plan_records()` wrapper
+- `structured_data_retriever.py` — date comparison branch in filter engine with tz-aware localization
+
+### 5. Row Cap Control (`enable_row_cap`)
+
+**Problem:** S360 supply chain queries needed all 34,983 aggregation groups for correct computed field grand totals. The 200-row cap truncated groups before computation.
+
+**Solution:** Added `enable_row_cap: bool = True` to `QAToolConfig` → passed to `StructuredDataRetriever` → controls all 4 cap locations (mode=all, mode=filter, aggregate groups, aggregate sample rows).
+
+**Decision:** Reverted S360 to `enable_row_cap=True` (default) after implementing computed fields — the grand total is now computed from ALL groups before capping, so the 200-row cap only limits detail breakdown, not numerical accuracy.
+
+**Files changed:**
+- `question_answering_configurations.py` — `enable_row_cap` field
+- `structured_data_retriever.py` — `enable_row_cap` in `__init__`, guards on all cap locations
+- `qa_base_pipeline.py` — passes `config.enable_row_cap` to retriever
+- `qa_pipelines.py` — S360 config (currently `True`, infrastructure ready for `False`)
+
+### 6. Positional Aggregation Sort Fix (first/last)
+
+**Problem:** `last()` aggregation returned the last row in CSV order, not the most recent value. For "last PO price", this gave a random price instead of the chronologically latest one. Affected 29% of items (10,044 out of 34,982).
+
+**Solution:** In `_apply_aggregate_df`, before aggregation, if any op is `first`/`last`, auto-detect the best date/time column and sort by it ascending. Generic — uses `_infer_date_column()` which detects date columns by dtype, name keywords, or parsability.
+
+**Files changed:**
+- `structured_data_retriever.py` — `_infer_date_column()` function, pre-aggregation sort for `first`/`last` ops
+
+### 7. Redis RunStore Gzip Compression
+
+**Problem:** S360 workflow output grew to 668 MB after adding new supply chain data (`edp_spend_f_curated.csv` increased from 409 MB to 590 MB). `record_run_success` broke the TCP socket writing to Redis (`ConnectionResetError: Connection reset by peer`).
+
+**Solution:** Added transparent gzip compression in `RedisRunStore`:
+- `_set_json`: if payload > 1 MB, gzip compress and prepend `b"__gz__"` marker
+- `_get_json`: detect `__gz__` prefix → decompress; otherwise read as plain JSON
+- **Backwards compatible**: old uncompressed entries (no `__gz__` prefix) still read correctly
+
+**Result:** 668 MB → 53 MB (12.5x compression ratio). Redis write succeeds.
+
+**Files changed:**
+- `run_store/redis_store.py` — `_GZIP_PREFIX`, `_GZIP_THRESHOLD_BYTES`, `_set_json` with compression, `_get_json` with decompression
+
+---
+
+## Conversational Context Carryover — IMPLEMENTED
+
+### Problem
+
+The Q&A pipeline is stateless — each question is processed independently. When a user asks a follow-up, implicit constraints from the previous turn (YTD, D3 filter, time range) are lost.
+
+**Example:**
+- Q1: "What is the YTD spend for D3 category?" → SQP adds YTD + D3 filters → returns $54.1M
+- Q2: "Which vendors account for the highest portions of that spend?" → SQP generates plan WITHOUT YTD constraint (only D3 filter) → queries ALL time periods → wrong result
+
+### Approaches Evaluated
+
+| Approach | Description | Verdict |
+|----------|-------------|---------|
+| LangGraph built-in query rewriting | Let LangGraph LLM rewrite the question | **Rejected** — often doesn't rewrite at all; when it does, hallucinates badly ("above time" → "longest lead times") |
+| Free-form LLM query rewriter | Custom LLM call to rewrite question | **Risky** — same hallucination risk |
+| Using LangGraph's `question` param (tool enrichment) | Use `question` instead of `original_question` in tool functions | **Rejected** — LangGraph passes verbatim most of the time; when it rewrites, it hallucinates |
+| **Constraint Memory + SQP Injection** | Store previous plan's filters, inject as structured context to SQP | **Implemented** — deterministic constraints, question unchanged, SQP decides |
+
+### Architecture: Constraint Memory + SQP Context Injection
+
+```
+Q1 completes → extract filters from SemanticQueryPlan → store in Redis/InMemory
+                                                         (key: workflow_id + thread_id)
+
+Q2 arrives → load prior_context → inject into SQP prompt → SQP decides per-filter
+
+SQP receives:
+  {
+    "current_date": "2026-03-24",
+    "question": "Which vendors account for the highest portions of that spend?",
+    "prior_context": {
+      "prior_question": "What is the YTD spend for D3 category?",
+      "prior_filters": [
+        {"field": "direct_level", "op": "==", "value": "D3-Non-Ferrous and Electromechanical"},
+        {"field": "transaction_date", "op": ">=", "value": "2026-01-01"},
+        {"field": "transaction_date", "op": "<=", "value": "2026-03-23"}
+      ],
+      "prior_summary": "YTD spend = $54.1M for D3 category"
+    },
+    "sections": [...]
+  }
+```
+
+### Data Model
+
+`QAPriorContext` dataclass in `question_answering_configurations.py`:
+- `question`: the previous question text
+- `filters`: list of filter dicts extracted from the previous `SemanticQueryPlan` (field, op, value) — **filters only, not the full RecordPlan** (mode, group_by, aggregations, computed_fields should NOT carry forward)
+- `sections_used`: which data sections were queried
+- `result_summary`: first 200 chars of the answer (enough for SQP context)
+- `timestamp`: ISO timestamp
+
+### Storage
+
+- **Redis** (`RedisRunStore`): key `qa-prior-context:{workflow_id}:{thread_id}`, TTL 24 hours
+- **InMemory** (`InMemoryRunStore`): dict keyed by `(thread_id, workflow_id)`
+- Cross-workflow isolation: key includes `workflow_id` — S360 context doesn't leak to Pricing workflow
+
+### SQP Rule 12 (Constraint Inheritance)
+
+```
+12) If "prior_context" is provided, decide per-filter whether to inherit:
+    INHERIT a prior filter when the question references the prior scope —
+    dollar amounts from prior_summary, same categories, or implicit references
+    ("that", "those", "it", "above", "same", "break down", "drill into").
+    DROP a prior filter when the question explicitly specifies a DIFFERENT value
+    for that dimension (e.g., prior has YTD but question says "last year").
+    IGNORE prior_context entirely when the question is a new, unrelated topic.
+    When inheriting, add the filter exactly as provided — do not modify values.
+```
+
+### Pipeline Flow
+
+```
+Q&A Tool (original_question) → pipeline.solve()
+  → run_store.get_prior_context(thread_id, workflow_id)
+  → _build_query_plan(question, ..., prior_context=prior_context)
+    → SQP._build_user_prompt_batch_fields_and_records(..., prior_context)
+      → JSON payload includes prior_context if present
+  → _retrieve_evidence(...)
+  → _generate_answer(...)
+  → _extract_filters_from_plan(semantic_query_plan) → store prior context
+  → return answer
+```
+
+### Config Flag
+
+`enable_context_carryover: bool = False` on `QAToolConfig`. Currently enabled for S360 only (`RheemSupplyChainS360WorkflowQAPipeline`).
+
+### Edge Cases
+
+| Case | Behavior |
+|------|----------|
+| First question (no prior context) | `prior_context` is `None` → omitted from prompt → SQP behaves as before |
+| Different topic | SQP sees no reference to prior scope → ignores prior_context |
+| Explicit override ("full year" vs "YTD") | SQP drops prior date filter, uses new one |
+| Different workflow | Key includes `workflow_id` → no cross-workflow leakage |
+| Stale context (>24h) | TTL expires → treated as first question |
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `question_answering_configurations.py` | `QAPriorContext` dataclass, `enable_context_carryover` flag |
+| `run_store/redis_store.py` | `store_prior_context()`, `get_prior_context()` with 24h TTL |
+| `run_store/memory.py` | Same interface for local dev |
+| `qa_base_pipeline.py` | Load prior context before planning, `_extract_filters_from_plan()`, store after answer, thread `prior_context` through `_build_query_plan` |
+| `semantic_query_planner.py` | `prior_context` param threaded through `build_semantic_query_plan_batch` → `select_fields_and_record_plans_batch_all_sections` → `_build_user_prompt_batch_fields_and_records`; injected into SQP JSON payload; rule 12 in both system prompts |
+| `qa_pipelines.py` | `enable_context_carryover=True` for S360 |
+
+### Remaining Work
+
+| Item | Status | Priority |
+|------|--------|----------|
+| Enable for other pipelines | Not started | Medium |
+| DQP support for prior constraints | Not started | Medium |
+
+---
+
+## Smart Aggregation Cap Sorting
+
+### Problem
+
+When aggregation produces more groups than `max_rows` (e.g., 41,704 item groups → capped to 200), the smart cap sorted by the **first aggregation column** (e.g., `total_qty_2025`). This meant items with high spend but lower quantity could be excluded from the top 200 — invisible to the LLM.
+
+### Solution
+
+Prefer computed fields for sorting when they exist. The sort priority is now:
+1. **Computed field columns** (e.g., `estimated_spend_2026`) — the derived metric the user asked for
+2. **Aggregation columns** (fallback) — first agg column as before
+
+This ensures the top 200 rows contain the items most relevant to the user's question.
+
+**No behavior change when computed fields are absent** — `computed_col_names` is empty, `candidate_cols` falls back to `agg_cols_renamed`.
+
+**File:** `structured_data_retriever.py` — smart cap section in `_apply_aggregate_df`
+
+---
+
+## Redis Performance: orjson Serialization
+
+### Problem
+
+`json.dumps` on 4.7M rows (S360 workflow output) was extremely slow — pure Python iteration over every value. This was a significant portion of the ~6 minute processing + Redis store time.
+
+### Solution
+
+Replaced `json.dumps` → `orjson.dumps` and `json.loads` → `orjson.loads` in `RedisRunStore._set_json` / `_get_json`.
+
+- **orjson**: Rust-based JSON serializer, ~8.8x faster than stdlib `json`
+- Returns `bytes` directly (no `.encode("utf-8")` needed)
+- `orjson.loads` accepts bytes directly (no `.decode("utf-8")` needed)
+- Backwards compatible — produces standard JSON, reads standard JSON from old entries
+
+**Benchmark (100K rows, extrapolated to 4.7M):**
+
+| Serializer | Time (4.7M rows) |
+|-----------|-------------------|
+| `json.dumps` | ~4.0s |
+| `orjson.dumps` | ~0.5s |
+
+**File:** `run_store/redis_store.py` — `_set_json` and `_get_json`
+
+---
+
+## Implementation Roadmap (Updated)
+
+### Phase 2.0: Computed Fields + Temporal Resolution — COMPLETED
+
+| Item | Status | Implementation |
+|------|--------|----------------|
+| `ComputedField` model + `computed_fields` on `RecordPlan` | Done | `semantic_query_planner.py` |
+| Safe AST-based expression evaluator (`_eval_computed_field`) | Done | `structured_data_retriever.py` — all arithmetic ops, parentheses, numeric literals; `ast` module, no `eval()` |
+| SQP prompt rule 11 (computed fields) | Done | Both batch and non-batch system prompts |
+| Computed field grand total (sum across ALL groups before cap) | Done | `_apply_aggregate_df` — try/except protected |
+| Smart cap sort by computed fields | Done | Prefer computed field columns over agg columns for smart cap sorting |
+| Current date injection in SQP prompts | Done | `datetime.now().strftime("%Y-%m-%d")` in user prompts |
+| DQP temporal filter resolution (`_resolve_temporal_filters`) | Done | YTD, MTD, QTD, last year — deterministic |
+| Date comparison in retriever filter engine | Done | YYYY-MM-DD pattern → `pd.to_datetime` with tz-aware localization |
+| `enable_row_cap` config parameter | Done | Infrastructure ready, S360 currently `True` |
+| Positional aggregation sort (first/last → date order) | Done | `_infer_date_column()` + pre-aggregation sort |
+| Redis gzip compression for large payloads | Done | `_set_json`/`_get_json` with `__gz__` prefix marker |
+| Redis orjson serialization (~8.8x faster) | Done | `orjson.dumps`/`orjson.loads` in `RedisRunStore` |
+
+### Phase 2.1: Security Guardrails — COMPLETED
+
+| Item | Status | Implementation |
+|------|--------|----------------|
+| `security_guardrails.py` module extraction | Done | `is_blocked_input()`, `sanitize_output_text()`, `BLOCKED_RESPONSE` |
+| Regex-based capability discovery patterns (6 patterns) | Done | Require capability noun + self/system reference |
+| Deterministic short-circuit in main.py + console_app.py | Done | Block before LangGraph, return canned response |
+| Prompt guardrail for tool/data disclosure | Done | `GUARDRAIL_SYSTEM_INSTRUCTION` update |
+| Removed redundant `sanitize_user_messages` middleware | Done | Entry-point blocking is sufficient |
+
+### Phase 2.2: Conversational Context Carryover — COMPLETED
+
+| Item | Status | Implementation |
+|------|--------|----------------|
+| `QAPriorContext` data model | Done | `question_answering_configurations.py` |
+| Constraint extraction from `SemanticQueryPlan` | Done | `_extract_filters_from_plan()` in `qa_base_pipeline.py` |
+| Redis/InMemory storage (24h TTL) | Done | `store_prior_context()` / `get_prior_context()` in both stores |
+| `prior_context` injection into SQP prompt | Done | Threaded through batch plan builder, injected in user prompt JSON |
+| SQP rule 12 (constraint inheritance) | Done | Per-filter INHERIT/DROP/IGNORE decision framework |
+| `enable_context_carryover` config flag | Done | S360 only (`True`), all others `False` (default) |
+| Enable for other pipelines | Not started | Medium priority |
+| DQP support for prior constraints | Not started | Medium priority |
+
+### Phase 2.3: Null Filters + Temporal Grouping + Derived Group-By — COMPLETED
+
+| Item | Status | Implementation |
+|------|--------|----------------|
+| `is_null` / `is_not_null` filter ops | Done | Added to `FILTER_OPS`, `Op` Literal, `NULL_CHECK_OPS` in `question_answering_models.py` |
+| Null check handling in retriever | Done | `_apply_single_filter` checks `col.isna()` + empty string + "nan"/"None" strings |
+| SQP rule 9 (null filter guidance) | Done | Both system prompts: `is_null` for "no supplier", "missing vendor", etc. |
+| Derived `group_by` (`year_of:`, `month_of:`, `quarter_of:`) | Done | `_DERIVED_GROUP_BY_EXTRACTORS` in `_apply_aggregate_df` — extracts time period from date columns |
+| SQP rule 11 (derived group_by guidance) | Done | Both system prompts: prefix notation for temporal grouping |
+| SQP rules renumbered (1–14) | Done | Both system prompts consistent |
+| DQP null filter detection | Done | `NULL_FILTER_PATTERNS` + `_NULL_FIELD_KEYWORDS` → `_resolve_null_filters()` |
+| DQP temporal grouping detection | Done | `TEMPORAL_GROUPING_PATTERNS` → auto-upgrade to aggregate mode + inject `year_of:date_field` |
+| DQP `IntentSignals` extended | Done | `is_null_filter`, `is_temporal_grouping`, `null_filter_fields`, `temporal_grouping_period` |
+
+### Phase 2.4: Gemini 3.0 Pro Deprecation — COMPLETED
+
+| Item | Status | Implementation |
+|------|--------|----------------|
+| Remove `GEMINI_3_0_PRO` from model enums | Done | `model_ontology.py` |
+| Router L2 → Gemini 3.1 Pro | Done | `router_agent.py` — L2 RETRIEVAL/MATH now use 3.1 Pro with `medium` thinking |
+| Remove 3.0 Pro thinking level map | Done | `router_agent.py` — only Flash, 3.1 Pro, 2.5 Pro/Flash entries remain |
+| L2 fallback pool cross-provider | Done | `[sonnet, 3.1_pro, opus, 2.5_pro]` — Gemini always available as fallback |
+| Remove from authorized models | Done | `question_answering_configurations.py` — 7 models (was 8) |
+| Update test expectations | Done | `test_routing_agent.py` — L2 model, thinking level, fallback chains |
+| Synced to reasoning-engine | Done | All 8 files updated in reasoning-engine repo |

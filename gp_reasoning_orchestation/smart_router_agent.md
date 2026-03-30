@@ -46,7 +46,7 @@ Question → Two-Stage Deterministic Router → Reasoning Level (L0-L4) × Task 
 |-------|------|-------------|-------------|-----------------|
 | **L0** | Direct Lookup | Answer is directly in the data, no reasoning | "Give me top 10 records ranking by profit" | Gemini 3.0 Flash |
 | **L1** | Single-Step Reasoning | One transformation/filter/aggregation | "What is the total profit for Rheem in Scenario 2?" | Gemini 3.0 Flash / Claude 4.5 Haiku |
-| **L2** | Multi-Step Reasoning | 2-5 steps, cross-reference, synthesis | "Compare profit margins across Scenario 2, 3, 4 and highlight trends" | Claude 4.6 Sonnet / Gemini 3.0 Pro |
+| **L2** | Multi-Step Reasoning | 2-5 steps, cross-reference, synthesis | "Compare profit margins across Scenario 2, 3, 4 and highlight trends" | Claude 4.6 Sonnet / Gemini 3.1 Pro |
 | **L3** | Complex Analytical | Deep reasoning, multi-constraint, cause-effect | "Why is Scenario 3 underperforming and what trade-offs should we optimize?" | Claude 4.6 Opus / Gemini 3.1 Pro |
 | **L4** | Creative/Strategic | Novel strategies, what-if design, open-ended judgment | "Design a pricing strategy that maximizes margin while maintaining market share" | Claude 4.6 Opus / Gemini 3.1 Pro |
 
@@ -263,7 +263,7 @@ Beyond complexity, we need to consider **which model is best** for the specific 
 |-------|-----------|------|------------|----------|----------|-------------------|
 | **L0** | Gemini 3.0 Flash | Gemini 3.0 Flash | Gemini 3.0 Flash | Gemini 3.0 Flash | Gemini 3.0 Flash | SIG-PRE 0.1 (+ Opus) |
 | **L1** | Gemini 3.0 Flash | Gemini 3.0 Flash | Gemini 3.0 Flash | Gemini 3.0 Flash | Claude 4.5 Haiku | SIG-PRE 0.1 (+ Opus) |
-| **L2** | Gemini 3.0 Pro | Gemini 3.0 Pro | Claude 4.6 Sonnet | Claude 4.6 Sonnet | Claude 4.6 Sonnet | SIG-PRE 0.1 (+ Opus) |
+| **L2** | Gemini 3.1 Pro | Gemini 3.1 Pro | Claude 4.6 Sonnet | Claude 4.6 Sonnet | Claude 4.6 Sonnet | SIG-PRE 0.1 (+ Opus) |
 | **L3** | Gemini 3.1 Pro | Gemini 3.1 Pro | Claude 4.6 Opus | Claude 4.6 Opus | Claude 4.6 Opus | SIG-PRE 0.1 (+ Opus) |
 | **L4** | Gemini 3.1 Pro | Gemini 3.1 Pro | Claude 4.6 Opus | Claude 4.6 Opus | Claude 4.6 Opus | SIG-PRE 0.1 (+ Opus) |
 

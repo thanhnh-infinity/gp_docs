@@ -8,3 +8,298 @@ MATCH p=()-[:SEMANTICA_REL]->() RETURN p LIMIT 10000;
 
 MATCH (n) WHERE toLower(n.label) = "women's health"
 MATCH p=(n)-[r:SEMANTICA_REL]-(m) RETURN p LIMIT 100000;
+
+
+2026-03-20T16:07:07-0500 - INFO - app.workflow.question_answering_fr.engine.semantic_query_planner - [Q&A Semantic Query Planner - Leve2+3 - BatchMode] section=edp_spend_f_curated ; fields=['item_description', 'transaction_unit_price', 'transaction_quantity', 'transaction_date', 'spend_type'] ; record_plan=mode='aggregate' k=None sort_by=None descending=True filters=[RecordFilter(field='spend_type', op='==', value='Direct'), RecordFilter(field='transaction_date', op='>=', value='2025-01-01'), RecordFilter(field='transaction_date', op='<=', value='2025-12-31')] max_rows=200 group_by=['item_description'] aggregations=[Aggregation(field='transaction_quantity', op='sum', alias='total_2025_quantity'), Aggregation(field='transaction_unit_price', op='last', alias='last_po_price')] skip_reason=None
+
+
+
+====
+
+
+Oka, good . We want to move to the new task
+
+In our Q&A Framework and architecture, when the question associated with the workflow has been submitted to our Q&A and we have tool to handle it.
+
+If it is one-shoot, that is perfect since our RE in Q&A can handle that and return the response.
+
+But there is one issue for us for the Context between multuple Q&A
+
+What is the best approach ? Production-Grade, Enterprise-level, best practice to handle that . We can have a lot of approachs but we need the best solution for long-term approach
+
+For example
+
+- User running: ZeusTool.supply_chain_s360_rheem_analysis_workflow -- perfect
+- Then user asking question like : What is the YTD spend for the D3 category? --> our Q&A will handle that with the RheemSupplyChainS360WorkflowQAPipeline with
+supply_chain_s360_rheem_analysis_workflow_question_answer_tool
+- That works perfect :
+   + SQP generate the plan
+
+2026-03-22T16:04:07-0500 - INFO - app.services.llm_agent_service - [GP Orchestration Engine] Using model: LLMGeneralModels.GEMINI_3_0_FLASH
+2026-03-22T16:04:10-0500 - INFO - app.workflow.question_answering_fr.run_store.memory - [InMemory-RunStore] GET LATEST SUCCESS check workflow=supply_chain_s360_rheem_analysis_workflow,
+thread=8aec13d8-0a4e-4e42-8501-1d82e45da6a3, user=None
+2026-03-22T16:04:10-0500 - INFO - app.workflow.question_answering_fr.qa_base_pipeline - [Q&A Framework Pipeline] Q&A for Workflow: supply_chain_s360_rheem_analysis_workflow | Question: what is the ytd spend for the
+d3 category? | Thread: 8aec13d8-0a4e-4e42-8501-1d82e45da6a3 | User: None
+2026-03-22T16:04:11-0500 - INFO - app.workflow.question_answering_fr.engine.semantic_query_planner - [Q&A Ontology-Driven Content Selector] Aggregate Mode Selector ENABLED=True
+2026-03-22T16:04:11-0500 - INFO - app.workflow.question_answering_fr.engine.reasoning_protocol_designer - [Q&A Reasoning Protocol Designer] Generating ontology-aware reasoning protocol ENABLED=False
+2026-03-22T16:04:11-0500 - INFO - app.workflow.question_answering_fr.engine.semantic_query_planner - [Q&A Semantic Query Planner] Ignore to use Smart Partition Selection as workflow output sections might be small
+2026-03-22T16:04:11-0500 - INFO - app.workflow.question_answering_fr.engine.semantic_query_planner - [Q&A Semantic Query Planner - Leve2+3 - BatchMode] Semantic Select FIELDS and RECORDS for sections. Batch fields
+and records: token_size=5445
+2026-03-22T16:04:11-0500 - INFO - growth_protocol_ai_sdk.utils.llm_utils - [LiteLLM][Async] m
+… +84 lines …
+fr.engine.semantic_query_planner - [Q&A Semantic Query Planner - Leve2+3 - BatchMode] section=edp_supplier_data ; fields=[] ; record_plan=mode='none' k=None sort_by=None descending=True filters=None max_rows=200
+group_by=None aggregations=None computed_fields=None skip_reason=None
+2026-03-22T16:09:49-0500 - INFO - app.workflow.question_answering_fr.engine.semantic_query_planner - [Q&A Semantic Query Planner - Leve2+3 - BatchMode] section=edp_org_location_data ; fields=[] ;
+record_plan=mode='none' k=None sort_by=None descending=True filters=None max_rows=200 group_by=None aggregations=None computed_fields=None skip_reason=None
+2026-03-22T16:09:49-0500 - INFO - app.workflow.question_answering_fr.engine.semantic_query_planner - [Q&A Semantic Query Planner - Leve2+3 - BatchMode] section=edp_operating_unit_data ; fields=[] ;
+record_plan=mode='none' k=None sort_by=None descending=True filters=None max_rows=200 group_by=None aggregations=None computed_fields=None skip_reason=None
+2026-03-22T16:09:49-0500 - INFO - app.workflow.question_answering_fr.engine.semantic_query_planner - [Q&A Semantic Query Planner - Leve2+3 - BatchMode] section=edp_spend_categories_data ; fields=[] ;
+record_plan=mode='none' k=None sort_by=None descending=True filters=None max_rows=200 group_by=None aggregations=None computed_fields=None skip_reason=None
+
+
+it is okay for the 2nd question but it is not okay for the context since the clients seems like want to explore $54.1M that could be generated based on the time constraint YTD. We don't have that context in the Q&A
+for the 2nd query.
+
+If we add YTD in the 2nd query like that:
+
+Which vendors account for the highest portions  of the $54.1M spend YTD in D3 cateogry ?
+
+the Q&A working perfectly
+
+
+So what is the production-grade, industry/enterprise-level to help our RE and Q&A handling the transitive context like that.
+
+I think now, we need to transitite the constraint, context, general requirements, but so far it looks like working memory when we can transtiteve the output data of the 1st question + context to the second question
+---- That is harder, we can deal with that later. BUT RIGHT NOW, urgent thing is we need to transfer, transitive the context, constaint in the best way.
+
+Disucss with me and doing research deeply and provide me the best methodologies we can use it here ? Both inhouse solution or external library or exteral AI solution based on your research.
+
+Disucss first and clearly the plan before moving to implementation.
+
+
+====
+
+Disucss first and clearly the plan before moving to implementation.
+
+⏺ The Problem
+
+  The Q&A pipeline is stateless — each question is processed independently. When a user asks a follow-up, implicit constraints from the previous turn (YTD, D3 filter, time range) are lost because the SQP only sees
+  the current question text.
+
+  Industry Approaches (Research)
+
+  1. Query Rewriting (Conversational Query Resolution)
+
+  Used by: Google Search, Bing Chat, Azure AI Search, Databricks AI/BI
+
+  The follow-up question is rewritten to be self-contained before entering the pipeline:
+  - "Which vendors account for the highest portions of the $54.1M spend in D3?"
+  - → "Which vendors account for the highest portions of the YTD (2026-01-01 to 2026-03-22) spend in D3-Non-Ferrous and Electromechanical category?"
+
+  Pros: Minimal architecture change — rewritten question flows through SQP/DQP unchanged. Generic (handles any constraint type, not just filters).
+  Cons: Requires a fast LLM call. Non-deterministic.
+
+  2. Filter Memory (Constraint Carryover)
+
+  Used by: Tableau Ask Data, ThoughtSpot
+
+  Store the previous plan's filters and automatically inject them into the next SQP plan:
+  Q1 filters: [direct_level=='D3-...', date>='2026-01-01']
+  Q2 → auto-inject Q1 filters as "prior context"
+
+  Pros: Deterministic, exact filter values preserved.
+  Cons: Brittle — how do you know WHEN to carry forward vs. drop? What if Q2 is a completely different topic? Needs complex heuristics.
+
+  3. Plan Context Injection
+
+  Used by: Custom enterprise BI chatbots
+
+  Pass the previous SemanticQueryPlan as additional context to the SQP prompt. The LLM decides which constraints to keep.
+
+  Pros: LLM makes intelligent decisions.
+  Cons: Adds tokens. LLM might still miss constraints.
+
+  4. Hybrid: Query Rewriting + Plan Context
+
+  Used by: Microsoft Copilot, Salesforce Einstein
+
+  Combine approaches 1 + 3. Rewrite the question AND give the SQP the previous plan as reference.
+
+  My Recommendation: Query Rewriting (Approach 1)
+
+  Here's why:
+
+  1. You already proved it works — adding "YTD" to the question made SQP produce the correct plan. The problem isn't SQP capability, it's that the question is incomplete.
+  2. Minimal architecture change — add ONE pre-processing step before the Q&A pipeline. No changes to SQP, DQP, retriever, or grounded answer.
+  3. LangGraph already has the context — the conversation history contains the previous question, answer, constraints, and results. We just need to use it.
+  4. Generic — handles ALL context types:
+    - Time constraints: "YTD", "last quarter"
+    - Entity filters: "D3 category", "Rheem"
+    - Scope references: "that $54.1M", "those vendors"
+    - Implicit continuations: "break it down by vendor" (what is "it"?)
+  5. Industry standard — this is exactly how Google, Bing, and every production conversational AI handles follow-ups.
+
+  Implementation Plan
+
+  Current flow:
+    User Q2 → LangGraph → Q&A Tool → Pipeline → SQP → Retriever → Answer
+
+  Proposed flow:
+    User Q2 → LangGraph → Q&A Tool → [Query Rewriter] → Pipeline → SQP → Retriever → Answer
+                                           ↑
+                                uses conversation history
+                                (previous Q + previous answer summary)
+
+  The Query Rewriter is a fast LLM call (Gemini Flash or Haiku, <1s) that takes:
+  - Input: current question + previous Q&A turn summary (question + key filters + answer excerpt)
+  - Output: self-contained rewritten question
+  - Rule: if the question is already self-contained, return it unchanged
+
+  Where to implement: in the Q&A tool function, before calling the pipeline. The tool already receives the LangGraph thread context — we can extract the previous turn from conversation history or from Redis run
+  store.
+
+  Want me to implement this?
+
+  ===
+
+  ⏺ You're right — LangGraph's query rewriting is unreliable:
+  1. Often doesn't rewrite at all — passes the exact question verbatim
+  2. When it does rewrite, it hallucinates — "above time" → "longest average lead times" (completely wrong)
+
+  We should revert to original_question and use a different approach. Instead of rewriting the question, we inject the previous turn's constraints as structured context into the SQP prompt. The question stays
+  untouched — no hallucination risk.
+
+  Here's the approach:
+
+  Constraint Memory → SQP Context Injection
+
+  After Q1 completes, extract and store the active constraints:
+  Stored: {filters: [direct_level=='D3-...', transaction_date>='2026-01-01'],
+           result_summary: "YTD spend = $54.1M"}
+
+  On Q2, pass them as prior_context to the SQP prompt:
+  {
+    "question": "Which vendors account for the highest portions of the $54.1M spend in D3?",
+    "prior_context": {
+      "prior_filters": [{"field": "direct_level", "op": "==", "value": "D3-..."},
+                        {"field": "transaction_date", "op": ">=", "value": "2026-01-01"}],
+      "prior_summary": "Previous query returned YTD spend of $54.1M for D3 category"
+    },
+    "sections": [...]
+  }
+
+  SQP rule: "If prior_context is provided and the current question appears to reference the same data scope (mentions dollar amounts, categories, or implicit references like 'that', 'above', 'same'), inherit
+  prior_filters unless the question explicitly changes them."
+
+  Why this is better
+
+  ┌──────────────────────────────────────┬─────────────────────────────────────────────────────────────────────────────┬───────────────┐
+  │               Approach               │                                    Risk                                     │    Status     │
+  ├──────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────┼───────────────┤
+  │ LangGraph query rewriting            │ Hallucination, unreliable                                                   │ ❌ Proven bad │
+  ├──────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────┼───────────────┤
+  │ Question text rewriting (custom LLM) │ Still LLM, still can hallucinate                                            │ ⚠️ Risky      │
+  ├──────────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────┼───────────────┤
+  │ Constraint injection to SQP          │ Constraints are exact (from previous plan), question unchanged, SQP decides │ ✅ Safe       │
+  └──────────────────────────────────────┴─────────────────────────────────────────────────────────────────────────────┴───────────────┘
+
+  The question is never modified. The constraints are deterministic (extracted from the actual plan, not generated). The SQP LLM decides whether to apply them — but even if it doesn't, it's no worse than today.
+
+  Where to store the constraints
+
+  The simplest: store them in Redis alongside the run artifacts (we already have run_store.record_run_success). Or lighter: pass them through LangGraph's thread state.
+
+  Want me to implement this approach? First step would be reverting the S360 tool back to original_question, then building the constraint memory + SQP injection.
+
+  ===
+
+  My recommendation is still Query Rewriting — but not via LangGraph's built-in rewriting (which we proved hallucinates). Instead, a dedicated, constrained rewriter that we control.
+
+  The difference from what we tried:
+
+  ┌──────────────────────────────────────────────────────────────┬────────────────────────────────────────────────────────────────────────────────────┐
+  │                        What we tried                         │                               What I'm proposing now                               │
+  ├──────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────┤
+  │ Let LangGraph LLM freely rewrite the question                │ Our own rewriter with strict rules                                                 │
+  ├──────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────┤
+  │ LangGraph hallucinates ("above time" → "longest lead times") │ Rewriter only adds constraints from the previous plan — no creative interpretation │
+  ├──────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────┤
+  │ No control over what gets changed                            │ We define exactly what can be added: prior filters, time range, entity names       │
+  └──────────────────────────────────────────────────────────────┴────────────────────────────────────────────────────────────────────────────────────┘
+
+  The implementation is the same architecture I proposed:
+
+  User Q2 → LangGraph → Q&A Tool → [Query Rewriter] → Pipeline → SQP → Retriever → Answer
+
+  But the Query Rewriter's input is not just conversation history — it's the structured previous plan (exact filters, exact values):
+
+  Input to rewriter:
+    - current_question: "Which vendors account for the highest portions of the $54.1M spend in D3?"
+    - prior_filters: [direct_level=='D3-...', transaction_date>='2026-01-01', transaction_date<='2026-03-23']
+    - prior_question: "What is the YTD spend for D3 category?"
+
+  Output:
+    "Which vendors account for the highest portions of the YTD (2026-01-01 to 2026-03-23) spend in D3-Non-Ferrous and Electromechanical category?"
+
+  The rewriter is constrained — it can only append prior filter context, not creatively reinterpret the question. If the question is already self-contained, it returns it unchanged.
+
+  This is still Approach 1 (Query Rewriting), just with structured constraint input instead of free-form conversation history. Safer, more deterministic, same result.
+
+  The question is: do we build the rewriter as an LLM call (fast but non-deterministic) or as a deterministic rule-based system (reliable but limited)? I'd recommend starting with deterministic — if the previous plan
+   has filters and the current question doesn't mention those filter dimensions, append them. No LLM needed for that.
+
+  Want me to implement this?
+
+
+
+  ===
+  ## Top 15 Highest-Spend Items for 2026 (Projected)
+
+| Rank | Item Description | Vendor ID | 2025 Qty | Last PO Price | Projected 2026 Spend |
+|------|-----------------|-----------|----------|---------------|----------------------|
+| 1 | DOAS Drop Ship | 18994266 | 24,778 | $56,129 | **$1.39B** |
+| 2 | Coil45 voorgelakt 758,7x0,75 | VE025277 | 183,562 | $1,634 | **$300.0M** |
+| 3 | Bocht 180gr.kort wis.Komp. | VE021320 | 3,438,500 | $84 | **$290.1M** |
+| 4 | Coil45 voorgelakt 758,7x0,75 | VE020860 | 155,290 | $1,635 | **$253.9M** |
+| 5 | Shoulder bolt incl. dry-loc | VE020089 | 1,408,660 | $161 | **$226.3M** |
+| 6 | Replacement part: Supply pipe HRE middle | VE025095 | 247,649 | $913 | **$226.2M** |
+| 7 | Box outside CB 827x485x261 HRE A PR | VE021250 | 87,027 | $2,362 | **$205.5M** |
+| 8 | Box inside CB 810x460x270 HRE | VE020087 | 135,213 | $1,254 | **$169.6M** |
+| 9 | Bottom | VE025007 | 466,647 | $349 | **$162.7M** |
+| 10 | Box inside 45x95 | VE020087 | 44,507 | $2,910 | **$129.5M** |
+| 11 | Box inside CB 870x460x270 HRE | VE020087 | 89,656 | $1,306 | **$117.1M** |
+| 12 | Box filler CB 1035x750x0 HRE | VE020087 | 133,240 | $872 | **$116.2M** |
+| 13 | Box outside CB 890x480x263 HRE A PR | VE021250 | 48,240 | $2,399 | **$115.7M** |
+| 14 | Box outside CB 770x482x263 HRE A PR | VE021250 | 48,705 | $2,311 | **$112.6M** |
+| 15 | Blind Rivet ISO16384 - 3,2x8 Monel-A4 | VE021315 | 1,248,000 | $85 | **$106.0M** |
+
+
+===== 
+
+Hello Marc and Miro, 
+
+As I shared with Miro and Bryan, my self-petition EB2-NIW application ( the first process to apply green-card to live and work permanate in the US) that I do as self-pentition has been denied by USCIS. That is a big infrastrated for me and my family.
+
+So, my immigration progress summarize :
+- First time,  my former employer Elementatl Cognition sponsed me to apply EB2-NIW and It has been approved and I was waiting for the priority date to submit the I-485
+- But unfortunately, EC was no longer existed after 2024 and then I have to re-do all immigration progress as self-pentition and as you know It has been denined ( I worked with Fragomen to do this)
+
+That is great and super support for me and my family if GP sponse me to continue my immigration process as EB-1 pentition. I appricate that so much. 
+
+I think for safety and reduce all risks, EB-1 is the best option for my immigration pentition. If we are able to do that, so the immigration attorney will know exact steps and process have to do for this pentition. 
+
+
+
+
+
+# Timestamp footer
+output.append(self._build_workflow_timestamp_note())
+
+    def _build_workflow_timestamp_note(self) -> PipelineStructuredOutput:
+        return PipelineStructuredOutput(
+            name="workflow_generated_timestamp",
+            description="",
+            summary=workflow_generated_timestamp_note(),
+            data=[],
+            plotly=[],
+        )
