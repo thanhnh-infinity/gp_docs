@@ -303,3 +303,71 @@ output.append(self._build_workflow_timestamp_note())
             data=[],
             plotly=[],
         )
+
+
+Public banchmark different RE
+
+
+====
+
+
+User Query: If you use last PO price for each item-number and multiple by its 2025 quantities, what is the estimated spend projected for 2026? Make the analysis for Direct Materials only.
+2026-03-31T12:01:04-0500 - WARNING - google_genai._api_client - Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+2026-03-31T12:01:04-0500 - WARNING - google_genai._api_client - Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+2026-03-31T12:01:04-0500 - WARNING - google_genai._api_client - Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+2026-03-31T12:01:05-0500 - WARNING - google_genai._api_client - Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+2026-03-31T12:01:05-0500 - WARNING - google_genai._api_client - Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+2026-03-31T12:01:05-0500 - WARNING - google_genai._api_client - Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+2026-03-31T12:01:05-0500 - WARNING - google_genai._api_client - Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+2026-03-31T12:01:05-0500 - WARNING - google_genai._api_client - Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+2026-03-31T12:01:05-0500 - WARNING - google_genai._api_client - Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+2026-03-31T12:01:05-0500 - INFO - app.services.llm_agent_service - [GP Orchestration Engine] Using model: LLMGeneralModels.GEMINI_3_0_FLASH
+2026-03-31T12:01:12-0500 - WARNING - app.services.llm_agent_service - [GP Orchestration Engine] Model LLMGeneralModels.GEMINI_3_0_FLASH timed out after 7.0s — triggering fallback
+2026-03-31T12:01:12-0500 - INFO - app.services.llm_agent_service - [GP Orchestration Engine] Using Vertex Claude model: claude-sonnet-4-6
+2026-03-31T12:01:15-0500 - INFO - app.workflow.question_answering_fr.run_store.redis_store - [Redis-RunStore] GET LATEST SUCCESS check workflow=supply_chain_s360_rheem_analysis_workflow, thread=0a271b04-9d19-4aa7-9e63-4d35ba0d77d1, run=186c64af-3c07-4bd6-b8cd-dd18bccb9dd2, user=None
+2026-03-31T12:01:23-0500 - INFO - app.workflow.question_answering_fr.qa_base_pipeline - [Q&A Framework Pipeline] Q&A for Workflow: supply_chain_s360_rheem_analysis_workflow | Question: if you use last po price for each item-number and multiple by its 2025 quantities, what is the estimated spend projected for 2026? make the analysis for direct materials only. | Thread: 0a271b04-9d19-4aa7-9e63-4d35ba0d77d1 | User: None
+2026-03-31T12:01:26-0500 - INFO - app.workflow.question_answering_fr.engine.semantic_query_planner - [Q&A Ontology-Driven Content Selector] Aggregate Mode Selector ENABLED=True
+2026-03-31T12:01:26-0500 - INFO - app.workflow.question_answering_fr.engine.reasoning_protocol_designer - [Q&A Reasoning Protocol Designer] Generating ontology-aware reasoning protocol ENABLED=False
+2026-03-31T12:01:26-0500 - INFO - app.workflow.question_answering_fr.engine.semantic_query_planner - [Q&A Semantic Query Planner] Ignore to use Smart Partition Selection as workflow output sections might be small
+2026-03-31T12:01:26-0500 - INFO - app.workflow.question_answering_fr.engine.semantic_query_planner - [Q&A Semantic Query Planner - Leve2+3 - BatchMode] Semantic Select FIELDS and RECORDS for sections. Batch fields and records: token_size=5786
+2026-03-31T12:01:26-0500 - INFO - growth_protocol_ai_sdk.utils.llm_utils - [LiteLLM][Async] model=claude-sonnet-4-6, temperature=0.0, timeout=70
+2026-03-31T12:01:36-0500 - ERROR - asyncio - Task was destroyed but it is pending!
+task: <Task pending name='pool-1-worker-1' coro=<AsyncConnectionPool.worker() running at /Users/thanhnh/Workspace/Growth_Protocol/zeus-service/.venv/lib/python3.13/site-packages/psycopg_pool/pool_async.py:660> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+2026-03-31T12:01:36-0500 - ERROR - asyncio - Task was destroyed but it is pending!
+task: <Task pending name='pool-1-worker-2' coro=<AsyncConnectionPool.worker() running at /Users/thanhnh/Workspace/Growth_Protocol/zeus-service/.venv/lib/python3.13/site-packages/psycopg_pool/pool_async.py:660> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+2026-03-31T12:01:36-0500 - ERROR - asyncio - Task was destroyed but it is pending!
+task: <Task pending name='pool-1-worker-0' coro=<AsyncConnectionPool.worker() running at /Users/thanhnh/Workspace/Growth_Protocol/zeus-service/.venv/lib/python3.13/site-packages/psycopg_pool/pool_async.py:660> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+2026-03-31T12:01:43-0500 - INFO - growth_protocol_ai_sdk.utils.llm_utils - [LiteLLM][Async] caching=True
+2026-03-31T12:01:43-0500 - INFO - growth_protocol_ai_sdk.utils.llm_utils - [LiteLLM][Async] Actual model used=claude-sonnet-4-6
+2026-03-31T12:01:43-0500 - INFO - app.workflow.question_answering_fr.engine.semantic_query_planner - [Q&A Semantic Query Planner - Leve2+3 - BatchMode] section=edp_lead_time ; fields=[] ; record_plan=mode='none' k=None sort_by=None descending=True filters=None max_rows=200 group_by=None aggregations=None computed_fields=None skip_reason=None
+2026-03-31T12:01:43-0500 - INFO - app.workflow.question_answering_fr.engine.semantic_query_planner - [Q&A Semantic Query Planner - Leve2+3 - BatchMode] section=edp_spend_f_curated ; fields=['spend_type', 'item_description', 'transaction_quantity', 'transaction_unit_price', 'transaction_date'] ; record_plan=mode='aggregate' k=None sort_by=None descending=True filters=[RecordFilter(field='spend_type', op='==', value='Direct'), RecordFilter(field='transaction_date', op='>=', value='2025-01-01'), RecordFilter(field='transaction_date', op='<=', value='2025-12-31')] max_rows=200 group_by=['item_description'] aggregations=[Aggregation(field='transaction_quantity', op='sum', alias='total_qty_2025'), Aggregation(field='transaction_unit_price', op='last', alias='last_po_price')] computed_fields=[ComputedField(expression='last_po_price * total_qty_2025', alias='projected_spend_2026')] skip_reason=None
+2026-03-31T12:01:43-0500 - INFO - app.workflow.question_answering_fr.engine.semantic_query_planner - [Q&A Semantic Query Planner - Leve2+3 - BatchMode] section=edp_supplier_data ; fields=[] ; record_plan=mode='none' k=None sort_by=None descending=True filters=None max_rows=200 group_by=None aggregations=None computed_fields=None skip_reason=None
+2026-03-31T12:01:43-0500 - INFO - app.workflow.question_answering_fr.engine.semantic_query_planner - [Q&A Semantic Query Planner - Leve2+3 - BatchMode] section=edp_org_location_data ; fields=[] ; record_plan=mode='none' k=None sort_by=None descending=True filters=None max_rows=200 group_by=None aggregations=None computed_fields=None skip_reason=None
+2026-03-31T12:01:43-0500 - INFO - app.workflow.question_answering_fr.engine.semantic_query_planner - [Q&A Semantic Query Planner - Leve2+3 - BatchMode] section=edp_operating_unit_data ; fields=[] ; record_plan=mode='none' k=None sort_by=None descending=True filters=None max_rows=200 group_by=None aggregations=None computed_fields=None skip_reason=None
+2026-03-31T12:01:43-0500 - INFO - app.workflow.question_answering_fr.engine.semantic_query_planner - [Q&A Semantic Query Planner - Leve2+3 - BatchMode] section=edp_spend_categories_data ; fields=[] ; record_plan=mode='none' k=None sort_by=None descending=True filters=None max_rows=200 group_by=None aggregations=None computed_fields=None skip_reason=None
+2026-03-31T12:02:13-0500 - INFO - app.workflow.question_answering_fr.engine.structured_data_retriever - [Q&A Smart Retriever] Aggregate pre-filter: 4719078 -> 1116986 rows
+2026-03-31T12:02:14-0500 - INFO - app.workflow.question_answering_fr.engine.structured_data_retriever - [Q&A Smart Retriever] Sorted by 'transaction_date' for first/last aggregation
+2026-03-31T12:02:14-0500 - INFO - app.workflow.question_answering_fr.engine.structured_data_retriever - [Q&A Smart Retriever] Computed field: projected_spend_2026 = last_po_price * total_qty_2025
+2026-03-31T12:02:14-0500 - INFO - app.workflow.question_answering_fr.engine.structured_data_retriever - [Q&A Smart Retriever] Computed field grand total: projected_spend_2026=14491870659.256239
+2026-03-31T12:02:14-0500 - INFO - app.workflow.question_answering_fr.engine.structured_data_retriever - [Q&A Smart Retriever] Aggregation smart-capped: 34983 groups -> top 200 rows order by projected_spend_2026(grand total summary preserved)
+2026-03-31T12:02:14-0500 - INFO - app.workflow.question_answering_fr.engine.structured_data_retriever - [Q&A Smart Retriever] Grand total row inserted: __GRAND_TOTAL_ACROSS_34983_GROUPS__ | aggregated_values={'total_qty_2025': 2396167867.3573675, 'last_po_price': 79095535.163, 'projected_spend_2026': 14491870659.256239} | computed_from=1116986_filtered_rows
+2026-03-31T12:02:14-0500 - INFO - app.workflow.question_answering_fr.engine.structured_data_retriever - [Q&A Smart Retriever] Aggregation: 4719078 rows -> filtered=1116986 -> agg_rows=200 (group_by=['item_description'], aggs=['transaction_quantity', 'transaction_unit_price'])
+2026-03-31T12:02:15-0500 - INFO - app.workflow.question_answering_fr.engine.router_agent - [RouterAgent] q='if you use last po price for each item-number and multiple by its 2025 quantities, what is the estimated spend projected...' | level=L2_ANALYTICAL task=TaskType.ANALYSIS model=claude-sonnet-4-6 thinking=None confidence=0.64 stage=full_scoring workflow=supply_chain_s360_rheem_analysis_workflow
+2026-03-31T12:02:15-0500 - INFO - app.workflow.question_answering_fr.engine.grounded_answer - [Q&A Framework GroundedAnswerEngine] Question routing: workflow=supply_chain_s360_rheem_analysis_workflow, level=L2_ANALYTICAL, task=TaskType.ANALYSIS, model=claude-sonnet-4-6, thinking=None, confidence=0.64
+2026-03-31T12:02:15-0500 - INFO - app.workflow.question_answering_fr.engine.grounded_answer - [Q&A Framework GroundedAnswerEngine] Total prompt tokens: 20743
+2026-03-31T12:02:15-0500 - INFO - growth_protocol_ai_sdk.utils.llm_utils - [LiteLLM][Async] model=claude-sonnet-4-6, temperature=0.3, timeout=90
+2026-03-31T12:02:49-0500 - INFO - growth_protocol_ai_sdk.utils.llm_utils - [LiteLLM][Async] caching=True
+2026-03-31T12:02:49-0500 - INFO - growth_protocol_ai_sdk.utils.llm_utils - [LiteLLM][Async] Actual model used=claude-sonnet-4-6
+2026-03-31T12:02:49-0500 - INFO - app.workflow.question_answering_fr.run_store.redis_store - [Redis-RunStore] Stored prior context for workflow=supply_chain_s360_rheem_analysis_workflow, thread=0a271b04-9d19-4aa7-9e63-4d35ba0d77d1
+
+
+
+As role as AI research scientist and Senior AI Engineer working on reasoning engine and multi-agent system 
+
+We want to build a framework to do the reasoning over the Knowledge Graph on Neo4j, at the moment we have knowledge graph completely , consistent and good shape on Neo4j, we want to build an industry-level, enterprise system , production-grade level the agent called Knowledge Graph Reasoner such that we can do the reasoning over the knowledge graph 
+
+For example, client can ask Natural Langauge and we will retrieve data from Knowledge Graph and do the reasoning to answer this question. 
+
+I want to build the framework as  industry-level, enterprise system , production-grade to leverage ALL state-of-the-art knowledge Graph reasoner. 
+
+Can you do deep research and list all state-of-the-art Knowledge Graph Reasoner + which critical and important things that an enterprise-level and production-grade Knowledge Graph reasoner must have ? 
