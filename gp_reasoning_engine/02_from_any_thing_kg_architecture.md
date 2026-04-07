@@ -1816,6 +1816,64 @@ domain_vocabulary_mode=DomainVocabularyMode.HINT,
 - Full provenance chain (extraction_type, merged_from, via_entity on every artifact)
 - Ontology-driven relationship discovery ready for future RDF objectProperties
 
+### Future: Ontology-Driven Config Generation (Scaling Path)
+
+Today, `rheem_composition.py` is hand-written — 1600+ lines of entity mappings, relationship rules, implicit entities, aggregation strategies, and entity type aliases. This works but doesn't scale: every new client requires a human to write a config file.
+
+**The future:** The RDF ontology (from the OSI Engine) contains ALL the information needed to auto-generate a `WorkflowKGSchemaConfig`:
+
+```
+RDF Ontology (owl:Class, owl:ObjectProperty, rdfs:label, rdfs:domain, rdfs:range)
+       │
+       ▼
+OntologyToSchemaConfigGenerator
+       │
+       ▼
+WorkflowKGSchemaConfig (auto-generated)
+    ├── entity types        ← from owl:Class
+    ├── relationship rules  ← from owl:ObjectProperty (domain → range)
+    ├── entity_type_aliases ← from rdfs:label + skos:altLabel
+    ├── relationship_axioms ← from owl:inverseOf, owl:SymmetricProperty, owl:TransitiveProperty
+    ├── implicit entities   ← from owl:hasValue restrictions
+    └── domain configs      ← from ontology module structure
+```
+
+**What RDF/OWL maps to:**
+
+| RDF/OWL Construct | Maps To | Example |
+|-------------------|---------|---------|
+| `owl:Class` | Entity type in `ColumnEntityMapping` | `rheem:SKU rdf:type owl:Class` → `RheemEntityType.SKU` |
+| `owl:ObjectProperty` | `RelationshipRule` | `rheem:manufactured_by rdfs:domain rheem:SKU; rdfs:range rheem:Manufacturer` |
+| `rdfs:label` / `skos:altLabel` | `entity_type_aliases` | `rheem:SKU skos:altLabel "product", "item"` |
+| `owl:inverseOf` | `RelationshipAxiom.inverse_of` | `rheem:manufactured_by owl:inverseOf rheem:manufactures` |
+| `owl:SymmetricProperty` | `RelationshipAxiom.symmetric` | `rheem:competes_with rdf:type owl:SymmetricProperty` |
+| `owl:TransitiveProperty` | `RelationshipAxiom.transitive` | `rheem:part_of rdf:type owl:TransitiveProperty` |
+| `owl:DatatypeProperty` | `metric_columns` / `entity_attributes` | `rheem:retail_price rdfs:range xsd:float` |
+
+**Scaling path:**
+
+```
+Today (manual):
+  Human reads data → writes rheem_composition.py (1600 lines, 2-3 days)
+
+Near-future (semi-automated):
+  OSI Engine → ontology → OntologyToSchemaConfigGenerator → draft config
+  → Human reviews + tweaks column mappings → ready (0.5 day)
+
+Future (fully automated):
+  OSI Engine → ontology → Generator → config → KG Builder → KG Reasoner
+  → Zero human config work for new clients
+```
+
+**What's already prepared:**
+- `entity_type_aliases` field on `WorkflowKGSchemaConfig` — ready for auto-population from `rdfs:label`
+- `relationship_axioms` field — ready for auto-population from `owl:inverseOf` / `owl:SymmetricProperty`
+- `merge_ontology_relationships()` method — merges ontology-discovered relationships into partition schemas
+- `DomainVocabulary` in SemanticaEngine — ready for auto-population from ontology
+- OSI Engine (`app/ontology/osi_engine/`) already generates RDF/OWL from YAML — the output is the input
+
+**This is how we scale to 100 clients without 100 config files.**
+
 ### Status: Ready for Downstream
 
 The Knowledge Graph Builder is **production-grade and architecturally verified** as the foundation for:
@@ -1823,4 +1881,3 @@ The Knowledge Graph Builder is **production-grade and architecturally verified**
 - **Neural-Symbolic Reasoning** (confidence-weighted graph traversal + LLM augmentation)
 - **LLM Reasoning** (GraphRAG via community summaries + structural traversal roots + domain-aware NL extraction)
 - **Explainable AI** (full provenance chain from extraction → type mapping → resolution → inference → insertion)
-- **Explainable AI** (full provenance chain from extraction → resolution → inference → insertion)

@@ -371,3 +371,16 @@ For example, client can ask Natural Langauge and we will retrieve data from Know
 I want to build the framework as  industry-level, enterprise system , production-grade to leverage ALL state-of-the-art knowledge Graph reasoner. 
 
 Can you do deep research and list all state-of-the-art Knowledge Graph Reasoner + which critical and important things that an enterprise-level and production-grade Knowledge Graph reasoner must have ? 
+
+
+===
+
+That is good question and good timing. 
+
+Yes, in theoretically, they can revser engineer through Zues to get some information inside such as piece of the ontology ( not the whole ontology). 
+
+- They can try hard and might get small piece of the ontology ---But They will have never accessed to the whole ontology; maybe they can try hard to get schema, explicit relationships and meta-fields . Knowledge Graph is a different problem, all our response are semantically backed and reasoned by some smart agent and a sub-graph of Knowledge Graph in this domain is one of them, if they do it very smartly and very hacky, then they might get the KG. The Logical repreentation is the same level as KG. 
+
+- I have started thinking and working on security Zues prompt 1 month ago and tried all my best to block all malicious prompt from client BUT also keep the system still working well with all kind of request. I have made some progress with that ( Bryan tested it as well). But I can say it is forever tuning and working -- that is endless fighting between security and hacker. At the moment, Zhenduo and Marcello are working on the Security Framework to at least detect the malicious prompt that we haven't catched yet to patch it. Furthermore, we should have a good software to protect that. 
+
+- 
