@@ -1054,3 +1054,221 @@ class ReasoningAgentTool:
 - Claude Agent SDK's `ClaudeSDKClient` — specific to LLM turns, not formal reasoning
 - Claude's permission system — our agents are deterministic programs, security is at the API layer
 - Any framework dependency — steal the patterns, implement them ourselves
+
+---
+
+# PART 4: AGENT IMPLEMENTATION AUDIT (2026-04-08)
+
+## Full Codebase Audit Against the Multi-Agent Architecture Diagram
+
+The architecture diagram (slide 03/06 "Multi-agent reasoning — not a pipeline, a team") defines **11 agents** organized around a central Ontology, split into Symbolic agents (left) and Neural agents (right), with two coordination modes (parallel peer communication and ontology-driven orchestration).
+
+This audit maps every agent to its current implementation status in the codebase.
+
+### Status Legend
+
+| Symbol | Meaning |
+|--------|---------|
+| COMPLETE | Agent exists as a dedicated class with full functionality |
+| PARTIAL | Capability exists as utility functions but no dedicated agent class |
+| MISSING | No implementation — empty directory or comments only |
+
+---
+
+### Symbolic Agents (Left Side of Diagram)
+
+#### 1. ASP Reasoner — Logic & constraint satisfaction
+- **Status:** COMPLETE
+- **File:** `app/reasoner/deterministic_reasoner.py`
+- **Class:** `ClingoASPReasoner` (line 242)
+- **Base:** `ASPReasoner` (abstract, line 36)
+- **Factory:** `ASPReasonerFactory.create(agent_name)` with `solver_type: clingo`
+- **Capabilities:** Multi-model solving, cost optimization, temporal reasoning, rule annotation parsing, fact loading, multi-shot grounding
+- **Registry:** 20+ agents registered in `app/registry/agent_registry.yml` (graph_coloring, blocksworld, nurse_scheduling, etc.)
+- **Cognition Agent tool:** `execute_asp` wraps this
+
+#### 2. SAT Solver — Boolean satisfiability
+- **Status:** MISSING
+- **What exists:** Clingo can handle SAT-class problems (satisfiability checking), but there is no dedicated standalone SAT solver (e.g., MiniSat, CaDiCaL, Z3 boolean mode)
+- **Where it would go:** `app/reasoner/sat_solver.py`
+- **Priority:** LOW — Clingo covers most SAT use cases. A dedicated SAT solver adds value only for pure boolean satisfiability at scale (100K+ variables) where Clingo's grounding overhead is prohibitive
+- **Cognition Agent tool:** Would be `solve_sat` (not yet planned)
+
+#### 3. CP Solver — Constraint programming
+- **Status:** COMPLETE
+- **File:** `app/reasoner/deterministic_reasoner.py`
+- **Class:** `ClingconASPReasoner` (line 492)
+- **Factory:** `ASPReasonerFactory.create(agent_name)` with `solver_type: clingcon`
+- **Capabilities:** Integer constraint theory over ASP, budget optimization, numerical constraint satisfaction
+- **Example agents:** `numerical_constraints/budget_optimization`, `numerical_constraints/test_clingcon`
+- **Cognition Agent tool:** `execute_asp` with `solver="clingcon"` wraps this
+
+#### 4. KG Reasoner — Graph traversal & reasoning
+- **Status:** COMPLETE
+- **Directory:** `app/agents/reasoning_orchestrator/engine/kg_reasoner/`
+- **Key files:**
+  - `kg_cypher_engine.py` — Schema-aware Cypher generation + execution (Phase 0 + Phase 1)
+  - `kg_query_planner.py` — Template matching, entity linking, relationship direction awareness
+  - `entity_linker.py` — 3-stage entity linking (exact → Lucene fulltext → HNSW vector)
+  - `kg_tier_router.py` — Routes between Tier 0 (tabular), Tier 1 (Cypher templates), Tier 2+ (future)
+- **Template system:** `app/reasoner/kg_reasoner/cypher_templates/template_registry.py` — 25+ domain-agnostic templates
+- **Schema compiler:** `app/kr_engine/knowlegde_graph/cypher_schema_compiler.py`
+- **Phase 1 complete, Phase 2 (subgraph/iterative) not yet started**
+- **Cognition Agent tool:** `execute_cypher` + `search_entities` wraps this
+
+#### 5. Arithmetic Agent — Computation & math
+- **Status:** PARTIAL (utility functions, no agent class)
+- **What exists:**
+  - `app/agents/reasoning_orchestrator/engine/structured_data_retriever.py` — arithmetic expression evaluation for computed fields (+, -, *, /, //, %, **)
+  - `app/statistic_engine/signal_computation.py` — growth rate calculations
+  - Python stdlib `math` used ad-hoc in various places
+- **What's missing:** A dedicated `ArithmeticAgent` class that can:
+  - Parse arithmetic expressions from natural language
+  - Execute multi-step computations with variable binding
+  - Verify LLM-generated numeric answers
+  - Handle unit conversions, currency, percentages
+- **Where it would go:** `app/reasoner/arithmetic_agent.py`
+- **Priority:** HIGH — Numeric verification is critical for enterprise queries. Every pricing/margin/cost question needs arithmetic verification.
+- **Cognition Agent tool:** `execute_python` + `compute_statistics` partially covers this
+
+#### 6. Aggregate Agent — Statistics & summaries
+- **Status:** PARTIAL (utility functions, no agent class)
+- **What exists:**
+  - `app/statistic_engine/signal_computation.py` — `calculate_relevancy_score()`, `calculate_volume_score()`, `calculate_sentiment_score()`, `extract_growth_rates()`, source distribution analysis
+  - `app/agents/reasoning_orchestrator/engine/structured_data_retriever.py` — aggregation in data retrieval (group_by, sum, avg, count)
+  - `AggregationStrategy` in KG Builder schema config — group_by, sum_columns, avg_columns, count_column
+- **What's missing:** A dedicated `AggregateAgent` class that can:
+  - Accept a dataset + aggregation specification
+  - Compute group-by aggregations (SUM, AVG, COUNT, MIN, MAX, MEDIAN, PERCENTILE)
+  - Compute rolling windows, time-series decomposition
+  - Generate summary statistics with confidence intervals
+  - Produce formatted summary tables
+- **Where it would go:** `app/reasoner/aggregate_agent.py`
+- **Priority:** HIGH — Aggregation queries are the most common enterprise question type ("total spend by category", "average lead time by plant")
+- **Cognition Agent tool:** `compute_statistics` + `execute_python` partially covers this
+
+---
+
+### Neural Agents (Right Side of Diagram)
+
+#### 7. ML Agent — Machine learning tasks
+- **Status:** PARTIAL (utility functions, no agent class)
+- **What exists:**
+  - `app/reasoner/ml_engine/similarity.py` — TF-IDF, BM25, LSA, embedding-based similarity computation
+  - `app/reasoner/transformer_engine/pre_trained/pretrained_transformer.py` — Pre-trained sentence transformers (bge-small, static-retrieval, MiniLM)
+  - `app/kr_engine/pipeline/knowledge_graph_builder/workers/entity_resolver.py` — Embedding-based entity resolution using cosine similarity clustering
+- **What's missing:** A dedicated `MLAgent` class that can:
+  - Run classification, regression, clustering on demand
+  - Feature engineering from structured data
+  - Model selection and evaluation
+  - Anomaly detection
+- **Where it would go:** `app/reasoner/ml_engine/ml_agent.py`
+- **Priority:** MEDIUM — valuable for anomaly detection (warranty claims outliers, pricing anomalies) but not blocking for current use cases
+- **Cognition Agent tool:** Not yet planned as dedicated tool (covered partially by `execute_python`)
+
+#### 8. DL Agent — Deep learning tasks
+- **Status:** PARTIAL (example models, not general)
+- **What exists:**
+  - `app/reasoner/nn_reasoner.py` — `NeuralASPReasoner` integrating NeurASP (neural + logic)
+  - `app/reasoner/models/coinflip_model.py` — `CoinFlipNet` (PyTorch example model)
+  - `app/reasoner/neural_network/neural_network.py` — Basic neural network modules
+  - `app/external/neurasp/` — Full NeurASP library integration
+- **What's missing:** A general `DLAgent` class that can:
+  - Load and run pre-trained deep learning models
+  - Fine-tune models on domain data
+  - Handle vision tasks (document OCR, chart understanding)
+  - Time-series forecasting with neural architectures
+- **Where it would go:** `app/reasoner/neural_network/dl_agent.py`
+- **Priority:** LOW for now — NeurASP integration covers the neural-symbolic use case; standalone DL is not the primary reasoning pattern
+- **Cognition Agent tool:** Not yet planned
+
+#### 9. LLM Reasoner — General language reasoning
+- **Status:** COMPLETE (distributed across multiple modules)
+- **Key files:**
+  - `app/llm_engine/llm_utils.py` — LiteLLM wrapper, provider abstraction (OpenAI, Gemini, Claude), auto-chunking, fallback chains
+  - `app/llm_engine/model_ontology.py` — Model definitions (`LLMGptModels`, `LLMVertexAIGeminiModels`, `LLMVertexAIClaudeModels`)
+  - `app/agents/reasoning_orchestrator/engine/router_agent.py` — Smart routing (L0-L4 × TaskType → Model)
+  - `app/agents/reasoning_orchestrator/engine/semantic_query_planner.py` — LLM-driven query planning
+  - `app/agents/reasoning_orchestrator/engine/grounded_answer.py` — LLM-driven answer generation with evidence grounding
+  - `app/agents/reasoning_orchestrator/engine/asp_program_execution_agent.py` — LLM-driven ASP program modification
+  - `app/agents/reasoning_orchestrator/engine/reasoning_protocol_designer.py` — LLM-driven reasoning protocol generation
+- **Models available:** GPT-5, GPT-5-mini, GPT-4.1, Gemini 3.0 Flash, Gemini 3.1 Pro, Claude 4.6 Opus, Claude 4.6 Sonnet, Claude 4.5 Haiku
+- **Routing:** 2-stage (fast regex exit + multi-signal scoring) → (Level × TaskType) → Model
+- **Cognition Agent:** The Cognition Agent itself IS the next-gen LLM Reasoner — Claude with tool use in an iterative loop
+
+#### 10. Transfer LLM — Domain adaptation
+- **Status:** MISSING
+- **What exists:** Empty directory at `app/reasoner/transformer_engine/transfer_learning/`
+- **Intent:** Fine-tune or adapt LLMs to domain-specific vocabulary and reasoning patterns (e.g., Rheem supply chain terminology, pricing optimization language)
+- **What's missing:** Everything — no code, no training pipeline, no adapter infrastructure
+- **Where it would go:** `app/reasoner/transformer_engine/transfer_learning/transfer_agent.py`
+- **Priority:** LOW for now — Prompt engineering + RAG + in-context learning (via system prompts) covers most domain adaptation needs. Fine-tuning becomes valuable when: (a) you have 10K+ domain Q&A pairs, (b) latency is critical (fine-tuned small model vs large prompted model), or (c) cost at scale justifies the training investment
+- **Cognition Agent tool:** Not needed — domain knowledge is injected via system prompt
+
+#### 11. Distillation LLM — High-accuracy specific tasks
+- **Status:** MISSING
+- **What exists:** Comments in `app/reasoner/kg_reasoner/cypher_templates/template_registry.py` mention replacing naive Cypher generation with a "Distillation LLM model"
+- **Intent:** Train small, fast, high-accuracy models for specific tasks (e.g., Cypher generation, entity extraction, intent classification) by distilling from large teacher models
+- **What's missing:** Everything — no distillation pipeline, no student model training, no evaluation framework
+- **Where it would go:** `app/reasoner/transformer_engine/distillation/`
+- **Priority:** MEDIUM-LOW — Becomes valuable when: (a) you have a specific task where a small model could replace expensive Opus/Sonnet calls, (b) latency budget is tight, (c) you have labeled training data from production queries. The natural first candidate: **Cypher generation distillation** — train a small model on (question, entity_context) → Cypher pairs collected from Phase 0 LLM outputs.
+- **Cognition Agent tool:** Would replace the LLM in `kg_cypher_engine.py` for faster Cypher generation
+
+---
+
+### Central Ontology — Shared Semantic Model
+
+- **Status:** COMPLETE
+- **Key files:**
+  - `app/ontology/agent_ontology.py` — Agent configuration ontology
+  - `app/ontology/signal_ontology.py` — Signal intelligence ontology
+  - `app/ontology/workflow_ontology.py` — Workflow domain ontology (`PipelineStructuredOutput`, `WorkflowOutputOntology`, `ASP_PROGRAM_CONTEXT`)
+  - `app/ontology/tool_ontology.py` — `ZeusTool` enum (60+ tools)
+  - `app/ontology/specific_workflow_ontology/` — Domain-specific (Rheem, Suntory, Bayer, etc.)
+  - `app/registry/agent_registry.yml` — Centralized agent registry (20+ agents)
+- **Coordination modes:**
+  - Mode 1 (Parallel peer communication) — NOT YET IMPLEMENTED. Agents currently run alone, never in parallel.
+  - Mode 2 (Ontology-driven orchestration) — PARTIALLY IMPLEMENTED. Router Agent selects models, QA pipelines orchestrate stages, but no dynamic agent composition.
+
+---
+
+### Summary Scorecard
+
+```
+SYMBOLIC AGENTS                          NEURAL AGENTS
+┌─────────────────────┬──────────┐      ┌─────────────────────┬──────────┐
+│ ASP Reasoner        │ COMPLETE │      │ ML Agent            │ PARTIAL  │
+│ SAT Solver          │ MISSING  │      │ DL Agent            │ PARTIAL  │
+│ CP Solver           │ COMPLETE │      │ LLM Reasoner        │ COMPLETE │
+│ KG Reasoner         │ COMPLETE │      │ Transfer LLM        │ MISSING  │
+│ Arithmetic Agent    │ PARTIAL  │      │ Distillation LLM    │ MISSING  │
+│ Aggregate Agent     │ PARTIAL  │      │                     │          │
+└─────────────────────┴──────────┘      └─────────────────────┴──────────┘
+
+                    ┌───────────────────────────┐
+                    │   CENTRAL ONTOLOGY        │
+                    │   COMPLETE                │
+                    │                           │
+                    │   Coordination Mode 1:    │
+                    │     NOT IMPLEMENTED        │
+                    │   Coordination Mode 2:    │
+                    │     PARTIAL               │
+                    └───────────────────────────┘
+
+SCORE: 4/11 Complete, 4/11 Partial, 3/11 Missing
+```
+
+### Priority Matrix for Remaining Work
+
+| Priority | Agent | Why | Effort | Cognition Agent Tool |
+|----------|-------|-----|--------|---------------------|
+| **P0 (Now)** | KG Reasoner Phase 2 | Subgraph + iterative traversal unlocks complex graph queries | 2-3 weeks | `execute_cypher` (enhanced) |
+| **P1 (Next)** | Arithmetic Agent | Numeric verification is critical for enterprise pricing/margin queries | 3-5 days | `execute_python` / `compute_statistics` |
+| **P1 (Next)** | Aggregate Agent | Aggregation is the #1 enterprise question pattern | 3-5 days | `compute_statistics` (enhanced) |
+| **P2 (Soon)** | Coordination Mode 1 | Parallel agent execution enables hybrid reasoning | 1-2 weeks | Agent loop handles this |
+| **P2 (Soon)** | Coordination Mode 2 | Ontology-driven orchestration enables dynamic composition | 1-2 weeks | System prompt handles this |
+| **P3 (Later)** | Distillation LLM | Fast Cypher generation model, reduces Opus/Sonnet cost | 2-4 weeks | Replaces LLM in kg_cypher_engine |
+| **P3 (Later)** | ML Agent | Anomaly detection, classification on demand | 1-2 weeks | `execute_python` covers basics |
+| **P4 (Defer)** | SAT Solver | Clingo handles most SAT; dedicated solver only for 100K+ var scale | 1 week | Low value |
+| **P4 (Defer)** | DL Agent | NeurASP covers neural-symbolic; standalone DL not primary pattern | 2-3 weeks | Low value |
+| **P4 (Defer)** | Transfer LLM | Prompt engineering + RAG sufficient for now; fine-tuning later | 4-8 weeks | Not needed yet |
